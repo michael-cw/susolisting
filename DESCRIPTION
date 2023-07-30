@@ -1,0 +1,34 @@
+Package: susolisting
+Title: Shiny Application for EA Listing on Satellite Imagery
+Version: 0.1.0
+Authors@R: 
+    person("Michael", "Wild", , "mwild@worldbank.org", role = c("aut", "cre"))
+Description: A simple shiny application to mark buildings on a google map
+    within user provided enumeration area (EA) boundaries. The application
+    requires the input of boundaries in ESRI shape file format, and
+    returns a csv file with all the listed buildings. It is part of the
+    larger series of support tools for using spatial resources with Survey
+    Solutions.
+License: MIT + file LICENSE
+Imports: 
+    data.table,
+    dplyr,
+    DT,
+    fst,
+    googleway,
+    magrittr,
+    readr,
+    sf,
+    shiny,
+    shinyalert,
+    shinydashboard,
+    shinyjs,
+    stringr,
+    tools,
+    utils,
+    withr,
+    zip
+Encoding: UTF-8
+Language: en
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.3
