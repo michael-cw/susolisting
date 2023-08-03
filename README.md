@@ -9,7 +9,7 @@
 experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
 <!-- badges: end -->
 
-<div style="text-align: justify">
+<div align="justify">
 
 The Survey Solutions Listing Application is a key part of a broad
 toolkit designed to streamline survey implementation using [Survey

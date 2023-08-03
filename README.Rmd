@@ -19,7 +19,7 @@ knitr::opts_chunk$set(
 [![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
 <!-- badges: end -->
 
-<div style="text-align: justify">
+<div align="justify">
 The Survey Solutions Listing Application is a key part of a broad toolkit designed to streamline survey implementation using
 [Survey Solutions](https://docs.mysurvey.solutions/). By employing Enumeration Areas (for instance, those sampled using the [JDC-Survey Solutions Spatial Sampling application](https://github.com/michael-cw/susogrdframe)), 
 you can enumerate all visible buildings within specified boundaries on Google Maps. These enumerated buildings can then serve as the second stage sampling frame, enabling the extraction of survey units within the cluster from it.
