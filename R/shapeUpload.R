@@ -6,7 +6,7 @@
 shapeLoad2<-function(path=NULL, lay=NULL, sp.Library="sf"){
   # list for return
   outlist<-vector("list",2)
-  SHP<-sf::st_read(path)
+  SHP<-sf::st_read(path, quiet = T)
   ## Check validity and make valid
   crsOld<-sf::st_crs(SHP)
   # validate shape file

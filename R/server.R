@@ -7,16 +7,8 @@
 
 
 
-    ## Server Function
+## Server Function
 main_server<-function(input, output, session) {
-  # Changing option for duration of session
-  # shiny.maxRequestSizeold<-getOption("shiny.maxRequestSize")
-  # shiny::shinyOptions(shiny.maxRequestSize=5000*1024^2)
-  # on.exit(options(shiny.maxRequestSize=shiny.maxRequestSizeold))
-  #
-  # spinner.color.backgroundold<-getOption("spinner.color.background")
-  # options(spinner.color.background="#0d47a1")
-  # on.exit(options(spinner.color.background=spinner.color.backgroundold))
 
   # DT style
   smTab<-list(dom="tp")
@@ -156,8 +148,6 @@ main_server<-function(input, output, session) {
   observe({
     #appdir<-path.expand(file.path("~","susolisting_data", "download"))
     appdir<-file.path(tools::R_user_dir("susolisting", which = "data"), "download")
-    #print(shiny::getShinyOption("DT.options"))
-    #print(getOption("spinner.color.background"))
     if(!dir.exists(appdir)){
       # !only if not exists
       # 1. Data dir
@@ -194,6 +184,17 @@ main_server<-function(input, output, session) {
     shinyjs::show("navigation")
     #shinyjs::show("dwlButton")
   }, ignoreInit = TRUE)
+
+  ## 2.1. Hide back button, when counter is 1
+  observeEvent(counter(),{
+    req(counter())
+    if(counter()==1) {
+      shinyjs::disable("loadPrevEA")
+    } else if(counter()>1) {
+      shinyjs::enable("loadPrevEA")
+    }
+    #shinyjs::show("dwlButton")
+  }, ignoreInit = FALSE)
 
   ## 3. NEXT area
   observeEvent(input$loadNextEA,{
@@ -232,7 +233,7 @@ main_server<-function(input, output, session) {
     return(tmp.shp.sel)
   })
   ## 6. CHECK for existing points
-  lgaPoint<-reactive({
+  lgaPoint<-eventReactive(clearMap(), {
     tmp.counter<-counter()
     tmp.areaID<-areaIDs()[tmp.counter]
     fn<-stringr::str_replace_all(tmp.areaID, "[!@#$%^&*/\\\\]*", "")
@@ -257,8 +258,7 @@ main_server<-function(input, output, session) {
     FP<-fp()
 
     shiny::validate(need(dir.exists(FP), message = "Nothing to view yet!"))
-    print(list.files(FP, full.names = T))
-    print(FP)
+
     point_file_list<-list.files(FP, pattern = ".fst$", full.names = T)
     shiny::validate(need(length(point_file_list)>0, message = F))
     # point_file_names<-stringr::str_split(point_file_list, "/", simplify = T)[,4]
@@ -300,7 +300,7 @@ main_server<-function(input, output, session) {
       N_point<-0
     }
     tab<-data.table::data.table(ID=id_area, `Listed Units`=N_point)
-    tab<-DT::datatable(tab, options = list(dom="t"))
+    tab<-DT::datatable(tab, options = list(dom="t"), rownames = F)
     return(tab)
   })
 
@@ -313,12 +313,12 @@ main_server<-function(input, output, session) {
     req(lga.sel)
     tmp.points_sf<-lgaPoint()
     if(is.null(tmp.points_sf)) {
-      map<-google_map(key = map_key, event_return_type="list") %>%
+      map<-google_map(key = map_key, event_return_type="list", map_type = "satellite") %>%
         add_polygons(data=lga.sel, layer_id = "bounds", focus_layer = T,
                      fill_opacity = 0.1) %>%
         add_drawing(drawing_modes = "marker")
     } else {
-      map<-google_map(key = map_key, event_return_type="list") %>%
+      map<-google_map(key = map_key, event_return_type="list", map_type = "satellite") %>%
         add_polygons(data=lga.sel, layer_id = "bounds", focus_layer = T,
                      fill_opacity = 0.1) %>%
         add_markers(data = tmp.points_sf, layer_id = "house")%>%
@@ -338,7 +338,13 @@ main_server<-function(input, output, session) {
     long<-pos$lng
     lat<-pos$lat
     points[["new"]]<-data.table::data.table(long=long,lat=lat, area_id=tmp.areaID)
+
+    # diable previous button, when user has set markers
+    if(nrow(points[["new"]])>0) {
+      shinyjs::disable("loadPrevEA")
+    }
     points<-rbindlist(points)
+
     pointsCollectorGoogle(points)
   })
   ## UPDATE google map
@@ -348,10 +354,12 @@ main_server<-function(input, output, session) {
   })
   ## ii. summary triggers the map upadate
   observeEvent(clearMap(),{
+    tmp.counter<-counter()
+    lidcurr<-tmp.counter
+    lidpast<-tmp.counter-1
     lga.sel<-lgaSel()
     req(lga.sel)
     tmp.points_sf<-lgaPoint()
-    checkp<-tmp.points_sf
     if(is.null(tmp.points_sf)) {
       google_map_update(map_id = "detailSampMap") %>%
         clear_polygons(layer_id = "bounds") %>%
@@ -377,6 +385,7 @@ main_server<-function(input, output, session) {
     tmp.areaID<-areaIDs()[tmp.counter]
     points<-pointsCollectorGoogle()
     shiny::validate(need(nrow(points)>0, message=F))
+    req(lgaPoint())
 
     fp<-fp()
     fn<-stringr::str_replace_all(tmp.areaID, "[!@#$%^&*/\\\\]*", "")
@@ -424,8 +433,12 @@ main_server<-function(input, output, session) {
     if(file.exists(fn)){
       file.remove(fn)
     }
-    google_map_update(map_id = "detailSampMap") %>%
-      clear_drawing()
+
+    ## RESET the collector
+    pointsCollectorGoogle(data.table(long=numeric(0), lat=numeric(0), area_id=character(0)))
+    ## disable the return button
+    shinyjs::disable("loadPrevEA")
+
   }, ignoreInit = F)
 
 

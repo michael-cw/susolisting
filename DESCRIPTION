@@ -1,6 +1,6 @@
 Package: susolisting
 Title: Shiny Application for EA Listing on Satellite Imagery
-Version: 0.1.0
+Version: 0.1.1
 Authors@R: 
     person("Michael", "Wild", , "mwild@worldbank.org", role = c("aut", "cre"))
 Description: A simple shiny application to mark buildings on a google map
@@ -15,7 +15,7 @@ Imports:
     dplyr,
     DT,
     fst,
-    googleway,
+    googleway (>= 2.7.5),
     magrittr,
     readr,
     sf,
