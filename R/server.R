@@ -385,7 +385,6 @@ main_server<-function(input, output, session) {
     tmp.areaID<-areaIDs()[tmp.counter]
     points<-pointsCollectorGoogle()
     shiny::validate(need(nrow(points)>0, message=F))
-    req(lgaPoint())
 
     fp<-fp()
     fn<-stringr::str_replace_all(tmp.areaID, "[!@#$%^&*/\\\\]*", "")
