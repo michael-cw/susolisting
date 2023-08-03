@@ -26,7 +26,6 @@ Imports:
     stringr,
     tools,
     utils,
-    withr,
     zip
 Encoding: UTF-8
 Language: en

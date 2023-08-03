@@ -180,7 +180,7 @@ main_ui<-function(req) {
         column(width=10,
                shiny::tabsetPanel(id="mapType",
                                   shiny::tabPanel(title = "Google Map", value = "Google",
-                                                  googleway::google_mapOutput("detailSampMap", width = "100%", height = 900)
+                                                  googleway::google_mapOutput("detailSampMap", width = "82vw", height = "85vh")
                                   )
                )
         )
