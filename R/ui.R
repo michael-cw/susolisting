@@ -84,6 +84,18 @@ main_ui<-function(req) {
       .shiny-input-container {
         color: #0d47a1 !important;
       }
+
+      #shiny-notification-panel {
+        position: absolute !important;
+        top: 10px !important;
+        right: 10px !important;
+        height: 50px !important;   /* Adjust as needed */
+        width: 400px !important;    /* Adjust as needed */
+      }
+
+      .shiny-notification-content-text {
+        overflow-wrap: break-word;
+      }
     '))),
 
 

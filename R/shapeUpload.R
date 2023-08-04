@@ -30,3 +30,19 @@ shapeLoad2<-function(path=NULL, lay=NULL, sp.Library="sf"){
   return(outlist)
 
 }
+
+#' Function sanitze string for file name
+#'
+#' @noRd
+#' @keywords internal
+#'
+
+sanitize_string <- function(input_string, repl_for_whitespace = "_") {
+  sanitized_string <- stringr::str_replace_all(input_string, "[^a-zA-Z0-9_]", stringr::fixed(" ")) %>%
+    iconv("UTF-8", "ASCII", sub = "") %>%
+    stringr::str_squish() %>%
+    stringr::str_replace_all(stringr::fixed(" "), repl_for_whitespace)
+
+  return(sanitized_string)
+}
+

@@ -76,9 +76,51 @@ main_server<-function(input, output, session) {
                              imageUrl = "",
                              animation = TRUE)
       req(FALSE)
+    } else if(input$user=="") {
+      shinyalert::shinyalert(paste("User name missing!"),
+                             "You have not provided a user name. Since this is required to store the files in your personal directory, please referesh
+                             the page and provide a user name.",
+                             closeOnEsc = TRUE,
+                             closeOnClickOutside = TRUE,
+                             html = FALSE,
+                             type = "error",
+                             showConfirmButton = TRUE,
+                             showCancelButton = FALSE,
+                             confirmButtonText = "OK",
+                             confirmButtonCol = "#AEDEF4",
+                             timer = 0,
+                             imageUrl = "",
+                             animation = TRUE)
+      req(FALSE)
     } else {
       mapkey(input$mapkey)
-      user(input$user)
+
+      # Sanitze user name & show notification w path
+      usr<-input$user
+      # 1. san--> remove all punct->remove extra white->replace single whit w underscore
+      usr<-sanitize_string(usr)
+
+      # 2. notification
+      appdir<-file.path(tools::R_user_dir("susolisting", which = "data"), "download")
+      notmessage<-HTML(
+        sprintf(
+          "You are successfully logged in and have provided the required Google API key. Your files for this session will be stored
+        in you personal user directory under, <b>%s/%s_[upload file name]</b>. After uploading the file, you can see the complete file
+        path.", appdir, usr
+        ) %>%
+          stringr::str_remove_all("\\n") %>%
+          stringr::str_squish()
+      )
+
+      showNotification(
+        ui = notmessage,
+        duration = NULL,
+        id = "userinfostart",
+        type = "message",
+        session = session,
+        closeButton = T
+      )
+      user(usr)
     }
   })
   #################################################################################
@@ -388,9 +430,32 @@ main_server<-function(input, output, session) {
 
     fp<-fp()
     fn<-stringr::str_replace_all(tmp.areaID, "[!@#$%^&*/\\\\]*", "")
+    # show notification only at start -->when counter is 1
+    if(tmp.counter==1){
+      notmessage<-HTML(
+        sprintf(
+          "You are successfully logged in and have provided the required Google API key. Your files for this session will be stored
+        in you personal user directory under, <b>%s</b>. After uploading the file, you can see the complete file
+        path.", fp
+        ) %>%
+          stringr::str_remove_all("\\n") %>%
+          stringr::str_squish()
+      )
+
+      removeNotification(id = "userinfostart")
+      showNotification(
+        ui = notmessage,
+        duration = NULL,
+        id = "userinfoFull",
+        type = "message",
+        session = session,
+        closeButton = T
+      )
+    }
+
     if(!dir.exists(fp)) {
       ##  i. Check for existing USER dir, otherwise create
-      dir.create(fp)
+      dir.create(fp, recursive = T)
     }
     fn<-file.path(fp,paste0("area_", fn,".fst"))
     if(file.exists(fn)){
