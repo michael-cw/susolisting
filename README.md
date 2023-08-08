@@ -19,25 +19,26 @@ valuable tools for enumerating and extracting survey units.
 
 #### Key Features
 
-1.  Enumeration of Buildings: Utilizing Enumeration Areas (e.g., those
-    sampled with the [JDC-Survey Solutions Spatial Sampling
+1.  **Enumeration of Buildings**: Utilizing Enumeration Areas (e.g.,
+    those sampled with the [JDC-Survey Solutions Spatial Sampling
     application](https://github.com/michael-cw/susogrdframe)), you can
     identify and enumerate all visible buildings within specified
     boundaries on Google Maps. The enumerated buildings form the second
     stage sampling frame, allowing for precise extraction of survey
     units within the cluster.
 
-2.  Admin Interface: This intuitive interface lets you:
+2.  **Admin Interface**: This intuitive interface lets you:
 
     - Extract all enumerated areas from the individual user directories
       of your collaborators.
     - Construct the frame, which becomes the basis for drawing the
       sample.
 
-3.  Sample Drawing: For this stage, the application leverages the
-    ‘spsurvey’ package, which facilitates the drawing of the sample.
+3.  **Sample Drawing**: For this stage, the application leverages the
+    [‘spsurvey’](https://usepa.github.io/spsurvey/) package, which
+    facilitates the drawing of the sample.
 
-4.  Assignment to Supervisors: Once the sample is generated, you can
+4.  **Assignment to Supervisors**: Once the sample is generated, you can
     assign it directly to the Survey Solutions supervisors. This
     assignment is performed through a simple interface grounded on the
     Survey Solutions REST API.
