@@ -162,8 +162,12 @@ mapadminUI2_st2<-function(id) {
     fluidRow(
       column(2),
       column(8,
-             h4("Available Questionnaire",
-                style = "color: #0d47a1;text-align: center;")
+             shinyjs::hidden(
+               div(id = ns("headquest"),
+                   h4("Available Questionnaire",
+                      style = "color: #0d47a1;text-align: center !important;")
+               )
+             )
       ),
       column(2)
     ),
@@ -177,8 +181,12 @@ mapadminUI2_st2<-function(id) {
     fluidRow(
       column(2),
       column(8,
-             h4("Assignment Overview",
-                style = "color: #0d47a1;text-align: center;")
+             shinyjs::hidden(
+               div(id = ns("headass"),
+                   h4("Assignment Overview",
+                      style = "color: #0d47a1;text-align: center !important;")
+               )
+             )
       ),
       column(2)
     ),
@@ -337,6 +345,8 @@ mapadminSRV_st2 <- function(id, pointsfile=reactive({NULL})) {
         #questFullListIn(tab)
         tab<-DT::datatable(tab[,.(Title, Version)], list(dom="tp"), selection = "single",  rownames = F,
                            style = "bootstrap")
+        # enable header
+        shinyjs::show("headquest")
         return(tab)
       })
       IDVARS<-reactiveVal(NULL); LOCVARS<-reactiveVal(NULL)
@@ -507,7 +517,7 @@ mapadminSRV_st2 <- function(id, pointsfile=reactive({NULL})) {
                                 style=styleActButton,
                                 onclick = paste0('Shiny.onInputChange(\"', session$ns("reset_button"), '\",  this.id)' ))]
 
-        datatable(tab, escape = F, rownames = F, selection = "single",
+        tab<-datatable(tab, escape = F, rownames = F, selection = "single",
                   options = list(pagelength=500,
                                  scrollY="500px",
                                  scrollcollapse=TRUE,
@@ -517,6 +527,9 @@ mapadminSRV_st2 <- function(id, pointsfile=reactive({NULL})) {
                                                         width = '10%', targets = c(1),
                                                         width = '5%', targets = c(2)
                                  ))))
+        # enable header
+        shinyjs::show("headass")
+        return(tab)
       })
 
       # Reset Map assignment

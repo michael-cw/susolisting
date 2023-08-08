@@ -23,6 +23,12 @@ main_server<-function(input, output, session) {
   #   return(user)
   # })
 
+  # Disable INDIVIDUAL download, when admuser/admpass options is set
+  observe({
+    if(!is.null(getOption("admuser")) & !is.null(getOption("admpass"))) {
+      shinyjs::disable("downloadActivate")
+    }
+  })
 
 
   ##  Start-up Modal
@@ -573,14 +579,17 @@ main_server<-function(input, output, session) {
   # main panel hidden at start-up
   observe({
     shiny::hideTab(inputId = "mapType", target = "samp", session = session)
+    shiny::hideTab(inputId = "mapType", target = "suso", session = session)
   })
 
   observeEvent(sampleadmreturn$admcheckok(), {
     ac<-sampleadmreturn$admcheckok()
     if(ac){
       shiny::showTab(inputId = "mapType", target = "samp", session = session)
+      shiny::showTab(inputId = "mapType", target = "suso", session = session)
     } else {
       shiny::hideTab(inputId = "mapType", target = "samp", session = session)
+      shiny::hideTab(inputId = "mapType", target = "suso", session = session)
     }
   })
   # MODAL TO CREATE THE SAMPLE --> RESULT GOES INTO SUSO
