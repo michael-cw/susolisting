@@ -66,11 +66,39 @@ devtools::install_github("michael-cw/susolisting")
 
 ```
 
-## Running the application
+## Running the application interactively
+
+There are two options to run the application. The first one is in *local* mode, without *admuser* and *admpass* credentials provided. In this mode, the user needs to download her work, with the *enabled* download Button. The work is still stored, until the download button is clicked. Once the file is created, the directory will be flushed, **so make sure, you have finished all the enumeration areas/segments and the downloaded file is safely stored.
 
 ```{r start, eval=FALSE, echo=TRUE}
 library(susolisting)
 susolisting::runListingApp()
+
+```
+
+The second option allows you to run the application in *team* mode. This mode allows you to work with several *desk enumerators* either on the same device or everyone on their own devices, and copying the file then to the administrator device. The administrator can then compile a single sampling frame based on all the enumerated areas, sample from it, and finally directly assign the sampled units to the survey teams on the survey solution server. There is also a mapping module included, which allows you to map the frame variables to the Survey Solutions questionnaire Identification variables used on the [Cover Page](https://docs.mysurvey.solutions/questionnaire-designer/components/special-section-cover/). The GPS location of the sample units is automatically assigned to the GPS variable from the identifying variables. To use this mode, run:
+
+```{r start_adm, eval=FALSE, echo=TRUE}
+library(susolisting)
+susolisting::runListingApp(admuser = "you", admpass = "your_password")
+
+```
+
+## Running the application on a Shiny Server
+
+The package also contains a shiny server function (open source or pro), which you can run, i.e. in an Ubuntu Virtual Machine on your PC. The same two modes are available. To run it on a shiny server, you need to create a server location (= directory), i.e. *susolisting* and then put an *app.R* script into this directory. If you run in *local* mode, the script contains the following two lines:
+
+```{r start_srv, eval=FALSE, echo=TRUE}
+library(susolisting)
+susolisting::runListingAppServer()
+
+```
+
+or in *team* mode:
+
+```{r start_adm_srv, eval=FALSE, echo=TRUE}
+library(susolisting)
+susolisting::runListingAppServer(admuser = "you", admpass = "your_password")
 
 ```
 
@@ -87,6 +115,9 @@ devtools::install_github("daattali/shinyalert")
 
 ```
 
+## Feature requests and bug reports
+
+You can either use the standard GitHub approach by filing a bug report/feature request [here](https://github.com/michael-cw/SurveySolutionsAPI/issues) or you use the Survey Solutions user forum [here](https://forum.mysurvey.solutions/c/api/13).
 
 Please continue to check for updates, as we are constantly working to improve the application.
 </div>
