@@ -6,6 +6,11 @@
 \usage{
 runListingAppServer(admuser = NULL, admpass = NULL)
 }
+\arguments{
+\item{admuser}{user name for admin}
+
+\item{admpass}{user password for admin}
+}
 \description{
 A wrappter function to start the application on the SERVER. Please make sure you have read the
 documentation on how to use the app under \url{https://datanalytics.worldbank.org/SpatialSamplingManual/}

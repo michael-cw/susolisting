@@ -159,7 +159,6 @@ modal_adminspsample_server <- function(id,
         if(ac & input$framecreatconfirm) {
           print("success")
           fnall<-req(framefiles())
-          CHECKfnall<<-fnall
           #fn<-file.path(fp(),paste0("area_", fn,".fst"))
           points_dt<-list()
           for(i in 1:nrow(fnall)){

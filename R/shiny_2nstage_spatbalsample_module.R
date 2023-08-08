@@ -46,7 +46,7 @@ modal_spsample2stage_ui <- function(id, style = "color: #FFFFFF; background-colo
         ),
         column(4,
                numericInput(inputId = ns("sampSEED"),label = "Set Seed",
-                            value = floor(runif(1, 1000,9999)),
+                            value = floor(stats::runif(1, 1000,9999)),
                             min=0, step = 1)
         )
       ),
@@ -114,9 +114,9 @@ modal_spsample2stage_server <- function(id, framepoints_sf = reactive({ NULL }),
       # get all names
       cluvar<-names(framedata())
       # remove lat long
-      cluvar<-cluvar[!(grepl(x = (cluvar), patter = sprintf("(%s)|(%s)", patternlat, patternlong), ignore.case = T))]
+      cluvar<-cluvar[!(grepl(x = (cluvar), pattern = sprintf("(%s)|(%s)", patternlat, patternlong), ignore.case = T))]
       # update select
-      cluvar<-setNames(cluvar, cluvar)
+      cluvar<-stats::setNames(cluvar, cluvar)
       updateSelectInput(
         inputId = "clustervar", label = "Select Cluster Variable", choices = cluvar
       )
@@ -144,8 +144,8 @@ modal_spsample2stage_server <- function(id, framepoints_sf = reactive({ NULL }),
       frdat<-framedata()
       shiny::showNotification("Transforming data to spatial.")
       # identify lat/long
-      lat<-names(frdat)[grepl(x = names(frdat), patter = patternlat, ignore.case = T)]
-      long<-names(frdat)[grepl(x = names(frdat), patter = patternlong, ignore.case = T)]
+      lat<-names(frdat)[grepl(x = names(frdat), pattern = patternlat, ignore.case = T)]
+      long<-names(frdat)[grepl(x = names(frdat), pattern = patternlong, ignore.case = T)]
       # drop missing
       frdat <- frdat %>% dplyr::filter(!is.na(.data[[lat]]) & !is.na(.data[[long]]))
       # generate cluster count

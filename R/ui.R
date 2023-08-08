@@ -199,7 +199,7 @@ main_ui<-function(req) {
         column(width=9,
                shiny::tabsetPanel(id="mapType",
                                   shiny::tabPanel(title = "Google Map", value = "Google",
-                                                  googleway::google_mapOutput("detailSampMap", width = "82vw", height = "85vh")
+                                                  googleway::google_mapOutput("detailSampMap", width = "73vw", height = "85vh")
                                   ),
                                   shiny::tabPanel(title = "2stage_sample", value = "samp",
                                                   modal_adminspsample_ui_tabmain("sampleadm")
@@ -209,11 +209,6 @@ main_ui<-function(req) {
                                   )
                )
         )
-      ),
-      fluidRow(
-        column(width=2
-        ),
-        column(width=10)
       )
     )
 

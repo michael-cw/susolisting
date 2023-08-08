@@ -34,6 +34,16 @@ if(getRversion() >= "3.3.0")  {
     "Message",
     "Section",
     "type",
-    "Featured"
+    "Featured",
+    "Title",
+    "ea",
+    "area_id",
+    "siteID",
+    "UserName",
+    "IsLocked",
+    "text",
+    "Reset",
+    "Team",
+    ".data"
   ))
 }

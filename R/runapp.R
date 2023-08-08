@@ -19,7 +19,7 @@
 #' @import shinydashboard
 #' @import DT
 #' @import googleway
-#' @importFrom data.table as.IDate data.table as.data.table as.ITime copy setnames setorderv tstrsplit
+#' @importFrom data.table as.IDate data.table as.data.table as.ITime copy setnames setorderv tstrsplit rbindlist
 #' @importFrom shinyjs show
 #' @importFrom fst read_fst write_fst
 #' @importFrom readr write_csv
@@ -27,6 +27,8 @@
 #' @importFrom shinyjs runjs
 #' @importFrom sf st_as_sf st_is_longlat st_set_geometry st_transform
 #' @importFrom waiter spin_fading_circles
+#' @importFrom graphics text
+#' @importFrom stats runif setNames
 #' @export
 
 runListingApp <- function(launch.browser = T, admuser = NULL, admpass = NULL) {
