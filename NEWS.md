@@ -1,3 +1,9 @@
+# susolisting 0.2.0
+
+* added admin interface to extract listing data and compile the frame
+* added spsurvey package to generate spatially balanced sample
+* added Survey Solutions interface for assignment
+
 # susolisting 0.1.1
 
 * added shinyjs for navigation buttons

@@ -4,13 +4,17 @@
 \alias{runListingApp}
 \title{Start the Survey Solutions Listing Application}
 \usage{
-runListingApp(launch.browser = T)
+runListingApp(launch.browser = T, admuser = NULL, admpass = NULL)
 }
 \arguments{
 \item{launch.browser}{If true, the system's default web browser will be
 launched automatically after the app is started. Defaults to true in
 interactive sessions only. The value of this parameter can also be a
 function to call with the application's URL.}
+
+\item{admuser}{user name for admin}
+
+\item{admpass}{user password for admin}
 }
 \description{
 A wrappter function to start the application. Please make sure you have read the

@@ -392,7 +392,7 @@ main_server<-function(input, output, session) {
   ## UPDATE google map
   ## i. create summary reactive trigger
   clearMap<-reactive({
-    list(counter(), input$mapType, input$area_id, input$loadPrevEA, input$loadNextEA)
+    list(counter(), input$area_id, input$loadPrevEA, input$loadNextEA)
   })
   ## ii. summary triggers the map upadate
   observeEvent(clearMap(),{
@@ -569,5 +569,46 @@ main_server<-function(input, output, session) {
   }, contentType = "application/zip")
 
 
+  # SECOND STAGE SAMPLE ######
+  # main panel hidden at start-up
+  observe({
+    shiny::hideTab(inputId = "mapType", target = "samp", session = session)
+  })
+
+  observeEvent(sampleadmreturn$admcheckok(), {
+    ac<-sampleadmreturn$admcheckok()
+    if(ac){
+      shiny::showTab(inputId = "mapType", target = "samp", session = session)
+    } else {
+      shiny::hideTab(inputId = "mapType", target = "samp", session = session)
+    }
+  })
+  # MODAL TO CREATE THE SAMPLE --> RESULT GOES INTO SUSO
+  sampleadmreturn<-modal_adminspsample_server("sampleadm", side = reactive(input$side))
+
+  # ASSIGN --> DATA IS FROM 2ND STAGE SAMPLE
+  mapadminSRV_st2("susoassign", pointsfile = sampleadmreturn$sampleData)
+
   ###############################################################################################
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

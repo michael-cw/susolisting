@@ -20,9 +20,26 @@ knitr::opts_chunk$set(
 <!-- badges: end -->
 
 <div align="justify">
-The Survey Solutions Listing Application is a key part of a broad toolkit designed to streamline survey implementation using
-[Survey Solutions](https://docs.mysurvey.solutions/). By employing Enumeration Areas (for instance, those sampled using the [JDC-Survey Solutions Spatial Sampling application](https://github.com/michael-cw/susogrdframe)), 
-you can enumerate all visible buildings within specified boundaries on Google Maps. These enumerated buildings can then serve as the second stage sampling frame, enabling the extraction of survey units within the cluster from it.
+The Survey Solutions Listing Application forms an integral part of a comprehensive toolkit designed to enhance the process of survey implementation through [Survey Solutions](https://docs.mysurvey.solutions/). This application provides valuable tools for enumerating and extracting survey units.
+
+#### Key Features
+
+1. Enumeration of Buildings: Utilizing Enumeration Areas (e.g., those sampled with the [JDC-Survey Solutions Spatial Sampling application](https://github.com/michael-cw/susogrdframe)), you can identify and enumerate all visible buildings within specified boundaries on Google Maps. The enumerated buildings form the second stage sampling frame, allowing for precise extraction of survey units within the cluster.
+
+2. Admin Interface: This intuitive interface lets you:
+    * Extract all enumerated areas from the individual user directories of your collaborators.
+    * Construct the frame, which becomes the basis for drawing the sample.
+
+3. Sample Drawing: For this stage, the application leverages the 'spsurvey' package, which facilitates the drawing of the sample.
+
+4. Assignment to Supervisors: Once the sample is generated, you can assign it directly to the Survey Solutions supervisors. This assignment is performed through a simple interface grounded on the Survey Solutions REST API.
+
+#### Usage Overview
+
+The Survey Solutions Listing Application not only accelerates survey implementation but also provides robust capabilities for managing complex survey projects. By enabling an efficient workflow from enumeration to sample extraction, this application stands as a vital resource for researchers and survey professionals.
+
+For detailed information on how to get started, please consult our [documentation](https://datanalytics.worldbank.org/SpatialSamplingManual/).
+
 
 ## Prerequisites
 

@@ -107,7 +107,7 @@ main_ui<-function(req) {
         shinyjs::useShinyjs(),
         ## shiny alert conditional on version
         if (utils::packageVersion("shinyalert")<3) shinyalert::useShinyalert(),
-        column(width=2,
+        column(width=3,
                shiny::tabsetPanel(
                  id = "side",
                  shiny::tabPanel(
@@ -185,14 +185,27 @@ main_ui<-function(req) {
                    )
                  ),
                  shiny::tabPanel(
-                   title = "Admin"
+                   title = "Sample",
+                   br(), br(),
+                   modal_adminspsample_ui_tabside("sampleadm")
+                 ),
+                 shiny::tabPanel(
+                   title = "SuSo",
+                   br(), br(),
+                   mapadminUI2_st2("susoassign")
                  )
                )
         ),
-        column(width=10,
+        column(width=9,
                shiny::tabsetPanel(id="mapType",
                                   shiny::tabPanel(title = "Google Map", value = "Google",
                                                   googleway::google_mapOutput("detailSampMap", width = "82vw", height = "85vh")
+                                  ),
+                                  shiny::tabPanel(title = "2stage_sample", value = "samp",
+                                                  modal_adminspsample_ui_tabmain("sampleadm")
+                                  ),
+                                  shiny::tabPanel(title = "Survey Solutions", value = "suso",
+                                                  mapadminUI_st2("susoassign")
                                   )
                )
         )

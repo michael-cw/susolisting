@@ -4,7 +4,7 @@
 \alias{runListingAppServer}
 \title{Start the Survey Solutions Listing Application on Shiny Server}
 \usage{
-runListingAppServer()
+runListingAppServer(admuser = NULL, admpass = NULL)
 }
 \description{
 A wrappter function to start the application on the SERVER. Please make sure you have read the
