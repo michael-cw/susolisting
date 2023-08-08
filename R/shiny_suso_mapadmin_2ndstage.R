@@ -64,7 +64,7 @@ mapadminUI_st2<-function(id) {
                               fluidRow(
                                 column(1),
                                 column(10,
-                                       DT::dataTableOutput(ns("apiSummary"))
+                                       DT::dataTableOutput(ns("apiSummary"), height = "10vh")
                                 ),
                                 column(1)
                               ),br(),
@@ -170,7 +170,7 @@ mapadminUI2_st2<-function(id) {
     fluidRow(
       column(1),
       column(10,
-             DT::dataTableOutput(ns("qTableIn"))
+             DT::dataTableOutput(ns("qTableIn"), width = "10vw")
       ),
       column(1)
     ), br(),
@@ -185,7 +185,7 @@ mapadminUI2_st2<-function(id) {
     fluidRow(
       column(1),
       column(10,
-             DT::dataTableOutput(ns("assignoverviewTable"))
+             DT::dataTableOutput(ns("assignoverviewTable"), width = "23vw")
       ),
       column(1)
     )

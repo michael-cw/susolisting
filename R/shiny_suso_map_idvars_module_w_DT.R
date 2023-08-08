@@ -125,9 +125,15 @@ suso_map_idSRV <- function(id,
       showModal(modalDialog(title =tags$div(
         HTML("<center><font color='#0d47a1'><big>Mapping of Variables</big></font></center>")),
         fluidRow(
-          div(style = "text-align: center;",
-          helpText("Please select the variable from the corresponding variables from the sample to be mapped to the questionnaire.")
-          )
+          column(1),
+          column(10,
+                 div(id = "helpTmodal", style = "text-align: center !important; color: #0d47a1; font-weight: bold;",
+                     h5("Please select the variables from the available variables in the sample to be mapped to
+                     the ID variables from the questionnaire. Make sure, that the variable types match, as otherwise
+                        the assignment will fail.")
+                 )
+          ),
+          column(1)
         ),
         fluidRow(
           div(style = "text-align: center;",
