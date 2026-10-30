@@ -10,6 +10,7 @@
 #' @noRd
 #' @keywords internal
 main_ui <- function(req) {
+  provider <- resolve_map_provider()
   shinydashboard::dashboardPage(
     title = "Listing Application",
 
@@ -261,11 +262,19 @@ main_ui <- function(req) {
           width = 9,
           shiny::tabsetPanel(
             id = "mapType",
-            shiny::tabPanel(
-              title = "Google Map",
-              value = "Google",
-              googleway::google_mapOutput("detailSampMap", width = "73vw", height = "85vh")
-            ),
+            if (identical(provider, "vantor")) {
+              shiny::tabPanel(
+                title = "Vantor Map",
+                value = "Vantor",
+                leaflet::leafletOutput("detailSampMap", width = "73vw", height = "85vh")
+              )
+            } else {
+              shiny::tabPanel(
+                title = "Google Map",
+                value = "Google",
+                googleway::google_mapOutput("detailSampMap", width = "73vw", height = "85vh")
+              )
+            },
             shiny::tabPanel(
               title = "2stage_sample",
               value = "samp",

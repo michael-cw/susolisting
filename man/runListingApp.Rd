@@ -4,7 +4,12 @@
 \alias{runListingApp}
 \title{Start the Survey Solutions Listing Application}
 \usage{
-runListingApp(launch.browser = TRUE, admuser = NULL, admpass = NULL)
+runListingApp(
+  launch.browser = TRUE,
+  admuser = NULL,
+  admpass = NULL,
+  provider = c("google", "vantor", "maxar")
+)
 }
 \arguments{
 \item{launch.browser}{If true, the system's default web browser will be
@@ -15,6 +20,11 @@ function to call with the application's URL.}
 \item{admuser}{Character string specifying the admin username (optional).}
 
 \item{admpass}{Character string specifying the admin password (optional).}
+
+\item{provider}{Character string specifying the satellite imagery provider:
+\code{"google"} (default, uses \code{googleway} and a Google Maps API key) or
+\code{"vantor"} / \code{"maxar"} (uses \code{leaflet} and \code{vantorr} with Vantor/Maxar API
+credentials).}
 }
 \value{
 The return value of \code{\link[shiny:runApp]{shiny::runApp()}}.
@@ -29,13 +39,14 @@ This application is part of the suite of tools facilitating survey
 implementation with \href{https://docs.mysurvey.solutions/}{Survey Solutions}.
 Enumeration Areas (e.g., sampled with the JDC-Survey Solutions Spatial
 Sampling application) can be used to enumerate all buildings visible within
-the boundaries on a Google satellite map. The enumerated buildings can then
-be used for the second-stage sampling frame and to draw survey units within
-each cluster.
+the boundaries on a Google or Vantor (Maxar) satellite map. The enumerated
+buildings can then be used for the second-stage sampling frame and to draw
+survey units within each cluster.
 }
 \examples{
 if (interactive()) {
   runListingApp()
+  runListingApp(provider = "vantor")
 }
 
 }

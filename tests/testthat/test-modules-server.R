@@ -213,3 +213,72 @@ test_that("main_server renders detailSampMap after startup, shapefile upload, an
   })
 })
 
+test_that("main_server supports Vantor (Maxar) Leaflet map provider and marker collection", {
+  old_opt <- getOption("susolisting.provider")
+  on.exit({
+    options(susolisting.provider = old_opt)
+    vantorr::vantor_auth_clear(verbose = FALSE)
+  }, add = TRUE)
+  options(susolisting.provider = "vantor")
+
+  tmp_dir <- file.path(tempdir(), "test_vantor_server_flow")
+  on.exit(unlink(tmp_dir, recursive = TRUE), add = TRUE)
+  dir.create(tmp_dir, recursive = TRUE, showWarnings = FALSE)
+
+  poly1 <- sf::st_polygon(list(rbind(
+    c(10.0, 50.0), c(10.1, 50.0), c(10.1, 50.1), c(10.0, 50.1), c(10.0, 50.0)
+  )))
+  poly2 <- sf::st_polygon(list(rbind(
+    c(10.2, 50.0), c(10.3, 50.0), c(10.3, 50.1), c(10.2, 50.1), c(10.2, 50.0)
+  )))
+  sfc <- sf::st_sfc(poly1, poly2, crs = 4326)
+  shp_in <- sf::st_sf(ea_code = c("EA_V1", "EA_V2"), geometry = sfc)
+  shp_path <- file.path(tmp_dir, "bounds_vantor.shp")
+  sf::st_write(shp_in, shp_path, quiet = TRUE)
+
+  shp_files <- list.files(tmp_dir, full.names = TRUE)
+  zip_path <- file.path(tempdir(), "test_bounds_vantor.zip")
+  on.exit(unlink(zip_path), add = TRUE)
+  zip::zip(zipfile = zip_path, files = shp_files, mode = "cherry-pick")
+
+  shiny::testServer(main_server, {
+    # 1. Startup login with Vantor API key and product
+    session$setInputs(
+      mapkey = "fake_vantor_api_key",
+      vantor_product = "VIVID_ADVANCED_15",
+      user = "vantor_tester",
+      startup = TRUE
+    )
+    expect_true(vantorr::vantor_has_auth(verbose = FALSE))
+    expect_equal(vantorProduct(), "VIVID_ADVANCED_15")
+
+    # 2. Upload boundary shapefile and select identification variable
+    session$setInputs(new_shape = list(datapath = zip_path, name = "test_bounds_vantor.zip"))
+    session$setInputs(area_id = "ea_code")
+
+    # 3. Leaflet map must render with Vantor WMTS tiles, seamlines, bounds polygon, and drawing hook
+    map_json <- output$detailSampMap
+    expect_type(map_json, "character")
+    expect_match(map_json, "api\\.maxar\\.com/basemaps/v1/ogc/gwc/service/wmts")
+    expect_match(map_json, "VIVID_ADVANCED_15")
+    expect_match(map_json, "addPolygons")
+    expect_match(map_json, "add_suso_drawing")
+
+    # 4. Simulate placing a building marker on EA_V1 and advancing to EA_V2
+    session$setInputs(
+      detailSampMap_markercomplete = list(
+        position = list(lat = 50.05, lng = 10.05),
+        randomValue = 0.7
+      )
+    )
+    expect_equal(nrow(pointsCollectorGoogle()), 1L)
+    expect_equal(pointsCollectorGoogle()$area_id, "EA_V1")
+
+    session$setInputs(loadNextEA = 1L)
+    expect_equal(counter(), 2L)
+    expect_equal(lgaSel()$ea_code, "EA_V2")
+    expect_true("EA_V1" %in% savedFiles())
+    on.exit(unlink(fp(), recursive = TRUE), add = TRUE)
+  })
+})
+

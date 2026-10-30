@@ -62,7 +62,23 @@ test_that("shapeLoad2 loads a shapefile and transforms to EPSG:4326", {
   expect_equal(loaded[[2]]$area_id, "EA_01")
 })
 
-test_that("add_marker_drawing and clear_marker_drawing work on google_map and google_map_update", {
+test_that("resolve_map_provider normalizes google, vantor, and maxar providers", {
+  old_opt <- getOption("susolisting.provider")
+  on.exit(options(susolisting.provider = old_opt), add = TRUE)
+
+  options(susolisting.provider = NULL)
+  expect_equal(resolve_map_provider(), "google")
+  expect_equal(resolve_map_provider("google"), "google")
+  expect_equal(resolve_map_provider("vantor"), "vantor")
+  expect_equal(resolve_map_provider("MAXAR"), "vantor")
+
+  options(susolisting.provider = "vantor")
+  expect_equal(resolve_map_provider(), "vantor")
+
+  expect_error(resolve_map_provider("bing"), "`provider` must be one of")
+})
+
+test_that("add_marker_drawing and clear_marker_drawing work on google_map and leaflet objects", {
   m <- googleway::google_map(
     key = "dummy_key",
     libraries = c("visualization", "geometry", "places")
@@ -76,6 +92,16 @@ test_that("add_marker_drawing and clear_marker_drawing work on google_map and go
   fn_names2 <- vapply(m_clear$x$calls, function(c) c$functions, character(1))
   expect_true("clear_suso_drawing" %in% fn_names2)
 
+  lf <- leaflet::leaflet()
+  lf_draw <- add_marker_drawing(lf)
+  expect_s3_class(lf_draw, "leaflet")
+  lf_methods <- vapply(lf_draw$x$calls, function(c) c$method, character(1))
+  expect_true("add_suso_drawing" %in% lf_methods)
+
+  lf_clear <- clear_marker_drawing(lf_draw)
+  lf_methods2 <- vapply(lf_clear$x$calls, function(c) c$method, character(1))
+  expect_true("clear_suso_drawing" %in% lf_methods2)
+
   expect_error(add_marker_drawing(list()), "`map` must be a `google_map`")
   expect_error(clear_marker_drawing(list()), "`map` must be a `google_map`")
 
@@ -84,4 +110,5 @@ test_that("add_marker_drawing and clear_marker_drawing work on google_map and go
   expect_match(as.character(js_tag), "add_suso_drawing")
   expect_match(as.character(js_tag), "clear_suso_drawing")
   expect_match(as.character(js_tag), "ensureShinyOutputClasses")
+  expect_match(as.character(js_tag), "installLeafletHooks")
 })

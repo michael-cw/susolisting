@@ -1,15 +1,41 @@
-#' Add custom marker drawing control to a googleway map
+#' Resolve and validate the satellite imagery map provider
+#'
+#' @param provider Character string specifying the map provider (`"google"`,
+#'   `"vantor"`, or `"maxar"`). If `NULL`, reads
+#'   `getOption("susolisting.provider", "google")`.
+#'
+#' @return Either `"google"` or `"vantor"`.
+#' @noRd
+#' @keywords internal
+resolve_map_provider <- function(provider = NULL) {
+  if (is.null(provider) || length(provider) == 0L || is.na(provider[1]) || !nzchar(provider[1])) {
+    provider <- getOption("susolisting.provider", "google")
+  }
+  provider <- tolower(trimws(as.character(provider[1])))
+  if (!provider %in% c("google", "vantor", "maxar")) {
+    stop("`provider` must be one of \"google\", \"vantor\", or \"maxar\".", call. = FALSE)
+  }
+  if (identical(provider, "maxar")) {
+    provider <- "vantor"
+  }
+  provider
+}
+
+#' Add custom marker drawing control to a googleway or leaflet map
 #'
 #' @description
 #' Replaces `googleway::add_drawing(drawing_modes = "marker")`, which relied on
 #' the now-decommissioned `google.maps.drawing.DrawingManager` library in the
-#' Google Maps JavaScript API (removed in v3.65+). Attaches a lightweight
-#' custom drawing control (Pan / Add Marker) and click listener that places
-#' markers and emits the `<map_id>_markercomplete` Shiny input event.
+#' Google Maps JavaScript API (removed in v3.65+), and provides an equivalent
+#' Pan / Marker drawing control for `leaflet` maps used with the `vantorr`
+#' provider. Attaches a lightweight custom drawing control (Pan / Add Marker)
+#' and click listener that places markers and emits the
+#' `<map_id>_markercomplete` Shiny input event.
 #'
-#' @param map A `google_map` or `google_map_update` object created by `googleway`.
+#' @param map A `google_map`, `google_map_update`, `leaflet`, or
+#'   `leaflet_proxy` object.
 #'
-#' @return The modified `google_map` or `google_map_update` object.
+#' @return The modified map object.
 #' @noRd
 #' @keywords internal
 add_marker_drawing <- function(map) {
@@ -43,19 +69,25 @@ add_marker_drawing <- function(map) {
       }
     }
     return(map)
+  } else if (inherits(map, c("leaflet", "leaflet_proxy"))) {
+    return(leaflet::invokeMethod(map, NULL, "add_suso_drawing"))
   }
-  stop("`map` must be a `google_map` or `google_map_update` object.", call. = FALSE)
+  stop(
+    "`map` must be a `google_map`, `google_map_update`, `leaflet`, or `leaflet_proxy` object.",
+    call. = FALSE
+  )
 }
 
-#' Clear drawn markers from a googleway map
+#' Clear drawn markers from a googleway or leaflet map
 #'
 #' @description
 #' Clears all markers placed via `add_marker_drawing()` from the specified
-#' `google_map` or `google_map_update` object.
+#' `google_map`, `google_map_update`, `leaflet`, or `leaflet_proxy` object.
 #'
-#' @param map A `google_map` or `google_map_update` object created by `googleway`.
+#' @param map A `google_map`, `google_map_update`, `leaflet`, or
+#'   `leaflet_proxy` object.
 #'
-#' @return The modified `google_map` or `google_map_update` object.
+#' @return The modified map object.
 #' @noRd
 #' @keywords internal
 clear_marker_drawing <- function(map) {
@@ -89,18 +121,22 @@ clear_marker_drawing <- function(map) {
       }
     }
     return(map)
+  } else if (inherits(map, c("leaflet", "leaflet_proxy"))) {
+    return(leaflet::invokeMethod(map, NULL, "clear_suso_drawing"))
   }
-  stop("`map` must be a `google_map` or `google_map_update` object.", call. = FALSE)
+  stop(
+    "`map` must be a `google_map`, `google_map_update`, `leaflet`, or `leaflet_proxy` object.",
+    call. = FALSE
+  )
 }
 
-#' JavaScript tags for custom Google Maps marker drawing control
+#' JavaScript tags for custom Google Maps and Leaflet marker drawing controls
 #'
 #' @description
 #' Returns the `shiny::tags$script` implementing `add_suso_drawing` and
-#' `clear_suso_drawing` in the browser to replace the deprecated and removed
-#' `google.maps.drawing.DrawingManager` API, and patches `googleway`'s
-#' `clear_object` and `polygon_click` helpers for null-safety and non-blocking
-#' boundary polygons.
+#' `clear_suso_drawing` in the browser for both `googleway` and `leaflet`
+#' maps, and patches `googleway`'s `clear_object` and `polygon_click` helpers
+#' for null-safety and non-blocking boundary polygons.
 #'
 #' @return A `shiny.tag` object containing the script definition.
 #' @noRd
@@ -132,9 +168,14 @@ suso_drawing_js <- function() {
 
         function ensureShinyOutputClasses(map_id) {
           var mapDiv = document.getElementById(map_id);
-          if (mapDiv && mapDiv.classList && (mapDiv.classList.contains('googlemap') || mapDiv.classList.contains('google_map'))) {
-            mapDiv.classList.add('google_map', 'html-widget', 'html-widget-output', 'shiny-bound-output');
-            mapDiv.classList.remove('recalculating');
+          if (mapDiv && mapDiv.classList) {
+            if (mapDiv.classList.contains('googlemap') || mapDiv.classList.contains('google_map')) {
+              mapDiv.classList.add('google_map', 'html-widget', 'html-widget-output', 'shiny-bound-output');
+              mapDiv.classList.remove('recalculating');
+            } else if (mapDiv.classList.contains('leaflet')) {
+              mapDiv.classList.add('leaflet', 'html-widget', 'html-widget-output', 'shiny-bound-output');
+              mapDiv.classList.remove('recalculating');
+            }
           }
         }
 
@@ -192,7 +233,152 @@ suso_drawing_js <- function() {
           }
         }
 
+        function installLeafletHooks() {
+          if (window.LeafletWidget && window.LeafletWidget.methods) {
+            window.LeafletWidget.methods.add_suso_drawing = function() {
+              var map = this;
+              if (!map || typeof map.getContainer !== 'function') return;
+              var container = map.getContainer();
+              var map_id = map.id || (container ? container.id : 'detailSampMap');
+              ensureShinyOutputClasses(map_id);
+
+              if (!Array.isArray(map.__susoLeafletMarkers)) {
+                map.__susoLeafletMarkers = [];
+              }
+              if (!map.__susoDrawingMode) {
+                map.__susoDrawingMode = 'marker';
+              }
+
+              function updateLeafletCursor() {
+                var isMarker = map.__susoDrawingMode === 'marker';
+                if (container) {
+                  container.style.cursor = isMarker ? 'crosshair' : '';
+                }
+              }
+
+              if (!map.__susoControlAdded && window.L && L.Control) {
+                var SusoControl = L.Control.extend({
+                  options: { position: 'topright' },
+                  onAdd: function() {
+                    var controlDiv = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
+                    controlDiv.style.display = 'flex';
+                    controlDiv.style.backgroundColor = '#fff';
+                    controlDiv.style.borderRadius = '2px';
+                    controlDiv.style.boxShadow = '0 1px 4px -1px rgba(0,0,0,0.3)';
+                    controlDiv.style.overflow = 'hidden';
+                    controlDiv.style.border = 'none';
+
+                    var btnStyleBase = 'border:none;background:#fff;padding:6px 10px;cursor:pointer;font-size:13px;line-height:18px;display:flex;align-items:center;gap:4px;color:#333;';
+                    var panBtn = document.createElement('button');
+                    panBtn.type = 'button';
+                    panBtn.title = 'Stop drawing (Pan map)';
+                    panBtn.style.cssText = btnStyleBase + 'border-right:1px solid #e6e6e6;';
+                    panBtn.innerHTML = '<span>&#9995;</span><span>Pan</span>';
+
+                    var markerBtn = document.createElement('button');
+                    markerBtn.type = 'button';
+                    markerBtn.title = 'Add a building marker';
+                    markerBtn.style.cssText = btnStyleBase;
+                    markerBtn.innerHTML = '<span>&#128205;</span><span>Marker</span>';
+
+                    function updateModeUI() {
+                      var isMarker = map.__susoDrawingMode === 'marker';
+                      markerBtn.style.backgroundColor = isMarker ? '#e8f0fe' : '#fff';
+                      markerBtn.style.fontWeight = isMarker ? 'bold' : 'normal';
+                      panBtn.style.backgroundColor = !isMarker ? '#e8f0fe' : '#fff';
+                      panBtn.style.fontWeight = !isMarker ? 'bold' : 'normal';
+                      updateLeafletCursor();
+                    }
+
+                    panBtn.addEventListener('click', function(e) {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      map.__susoDrawingMode = 'pan';
+                      updateModeUI();
+                    });
+
+                    markerBtn.addEventListener('click', function(e) {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      map.__susoDrawingMode = 'marker';
+                      updateModeUI();
+                    });
+
+                    controlDiv.appendChild(panBtn);
+                    controlDiv.appendChild(markerBtn);
+
+                    if (L.DomEvent) {
+                      L.DomEvent.disableClickPropagation(controlDiv);
+                      L.DomEvent.disableScrollPropagation(controlDiv);
+                    }
+
+                    map.__susoUpdateModeUI = updateModeUI;
+                    updateModeUI();
+                    return controlDiv;
+                  }
+                });
+                map.__susoLeafletControl = new SusoControl();
+                map.addControl(map.__susoLeafletControl);
+                map.__susoControlAdded = true;
+              }
+
+              if (!map.__susoClickAdded) {
+                map.on('click', function(e) {
+                  if (map.__susoDrawingMode === 'marker' && e && e.latlng) {
+                    if (window.L && typeof L.marker === 'function') {
+                      var m = L.marker(e.latlng).addTo(map);
+                      if (!Array.isArray(map.__susoLeafletMarkers)) {
+                        map.__susoLeafletMarkers = [];
+                      }
+                      map.__susoLeafletMarkers.push(m);
+                    }
+                    var eventInfo = {
+                      position: {
+                        lat: e.latlng.lat,
+                        lng: e.latlng.lng
+                      },
+                      randomValue: Math.random()
+                    };
+                    if (window.Shiny && typeof Shiny.setInputValue === 'function') {
+                      Shiny.setInputValue(map_id + '_markercomplete', eventInfo, {priority: 'event'});
+                    } else if (window.Shiny && typeof Shiny.onInputChange === 'function') {
+                      Shiny.onInputChange(map_id + '_markercomplete', eventInfo);
+                    }
+                  }
+                });
+                map.__susoClickAdded = true;
+              }
+
+              if (typeof map.__susoUpdateModeUI === 'function') {
+                map.__susoUpdateModeUI();
+              } else {
+                updateLeafletCursor();
+              }
+            };
+
+            window.LeafletWidget.methods.clear_suso_drawing = function() {
+              var map = this;
+              if (!map) return;
+              if (Array.isArray(map.__susoLeafletMarkers)) {
+                for (var i = 0; i < map.__susoLeafletMarkers.length; i++) {
+                  if (map.__susoLeafletMarkers[i] && typeof map.removeLayer === 'function') {
+                    map.removeLayer(map.__susoLeafletMarkers[i]);
+                  }
+                }
+              }
+              map.__susoLeafletMarkers = [];
+            };
+          }
+        }
+
         installGooglewayHooks();
+        installLeafletHooks();
+        if (window.jQuery) {
+          window.jQuery(function() {
+            installGooglewayHooks();
+            installLeafletHooks();
+          });
+        }
 
         function placeSusoMarker(map_id, latLng) {
           var map = window[map_id + 'map'];

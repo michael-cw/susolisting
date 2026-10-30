@@ -6,6 +6,10 @@
 #'
 #' @param admuser Character string specifying the admin username (optional).
 #' @param admpass Character string specifying the admin password (optional).
+#' @param provider Character string specifying the satellite imagery provider:
+#'   `"google"` (default, uses `googleway` and a Google Maps API key) or
+#'   `"vantor"` / `"maxar"` (uses `leaflet` and `vantorr` with Vantor/Maxar API
+#'   credentials).
 #'
 #' @details
 #' This function is designed for deployment on Shiny Server. Create an `app.R`
@@ -21,21 +25,28 @@
 #' app <- runListingAppServer()
 #'
 #' @export
-runListingAppServer <- function(admuser = NULL, admpass = NULL) {
+runListingAppServer <- function(admuser = NULL,
+                                admpass = NULL,
+                                provider = c("google", "vantor", "maxar")) {
+  provider <- resolve_map_provider(provider)
   shiny::addResourcePath("www", system.file("www", package = "susolisting"))
 
   original_options <- list(
     shiny.maxRequestSize = getOption("shiny.maxRequestSize"),
     spinner.color.background = getOption("spinner.color.background"),
     admuser = getOption("admuser"),
-    admpass = getOption("admpass")
+    admpass = getOption("admpass"),
+    susolisting.provider = getOption("susolisting.provider")
   )
+
+  options(susolisting.provider = provider)
 
   changeoptions <- function() {
     options(
       spinner.color.background = "#0d47a1",
       admuser = admuser,
-      admpass = admpass
+      admpass = admpass,
+      susolisting.provider = provider
     )
     shiny::shinyOptions(shiny.maxRequestSize = 5000 * 1024^2)
 

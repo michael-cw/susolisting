@@ -3,12 +3,12 @@ Title: Shiny Application for EA Listing on Satellite Imagery
 Version: 0.2.0
 Authors@R: 
     person("Michael", "Wild", , "mwild@worldbank.org", role = c("aut", "cre"))
-Description: A Shiny application to mark buildings on a Google satellite map
-    within user-provided enumeration area (EA) boundaries. The application
-    requires the input of boundaries in ESRI shapefile format, and
-    returns a CSV file with all the listed buildings, supports second-stage
-    spatially balanced sampling via 'spsurvey', and integrates with 'Survey
-    Solutions' for team assignment creation.
+Description: A Shiny application to mark buildings on a Google or Vantor
+    (Maxar) satellite map within user-provided enumeration area (EA)
+    boundaries. The application requires the input of boundaries in ESRI
+    shapefile format, and returns a CSV file with all the listed buildings,
+    supports second-stage spatially balanced sampling via 'spsurvey', and
+    integrates with 'Survey Solutions' for team assignment creation.
 License: MIT + file LICENSE
 URL: https://github.com/michael-cw/susolisting
 BugReports: https://github.com/michael-cw/susolisting/issues
@@ -18,6 +18,7 @@ Imports:
     DT,
     fst,
     googleway (>= 2.7.5),
+    leaflet,
     magrittr,
     readr,
     sf,
@@ -29,6 +30,7 @@ Imports:
     stringr,
     SurveySolutionsAPIv2,
     tools,
+    vantorr (>= 0.3.0),
     waiter,
     zip
 Suggests: 

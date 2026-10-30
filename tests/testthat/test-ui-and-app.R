@@ -1,19 +1,50 @@
-test_that("main_ui builds without startup warnings (no useShinydashboard or useShinyalert warnings)", {
+test_that("main_ui builds without startup warnings for both google and vantor providers", {
+  old_opt <- getOption("susolisting.provider")
+  on.exit(options(susolisting.provider = old_opt), add = TRUE)
+
+  options(susolisting.provider = "google")
   expect_no_warning({
-    ui <- main_ui(NULL)
+    ui_google <- main_ui(NULL)
   })
-  expect_s3_class(ui, "shiny.tag")
-  ui_html <- as.character(ui)
-  expect_match(ui_html, "JDC - WB Listing Application")
-  expect_match(ui_html, "detailSampMap")
-  expect_match(ui_html, "add_suso_drawing")
+  expect_s3_class(ui_google, "shiny.tag")
+  ui_google_html <- as.character(ui_google)
+  expect_match(ui_google_html, "JDC - WB Listing Application")
+  expect_match(ui_google_html, "Google Map")
+  expect_match(ui_google_html, "detailSampMap")
+  expect_match(ui_google_html, "add_suso_drawing")
+
+  options(susolisting.provider = "vantor")
+  expect_no_warning({
+    ui_vantor <- main_ui(NULL)
+  })
+  expect_s3_class(ui_vantor, "shiny.tag")
+  ui_vantor_html <- as.character(ui_vantor)
+  expect_match(ui_vantor_html, "Vantor Map")
+  expect_match(ui_vantor_html, "leaflet")
+  expect_match(ui_vantor_html, "detailSampMap")
 })
 
-test_that("runListingAppServer returns a valid shiny.appobj without warnings", {
+test_that("runListingAppServer returns a valid shiny.appobj for google, vantor, and maxar", {
+  old_opt <- getOption("susolisting.provider")
+  on.exit(options(susolisting.provider = old_opt), add = TRUE)
+
   expect_no_warning({
-    app <- runListingAppServer(admuser = "admin", admpass = "secret")
+    app_g <- runListingAppServer(admuser = "admin", admpass = "secret", provider = "google")
   })
-  expect_s3_class(app, "shiny.appobj")
+  expect_s3_class(app_g, "shiny.appobj")
+  expect_equal(getOption("susolisting.provider"), "google")
+
+  expect_no_warning({
+    app_v <- runListingAppServer(admuser = "admin", admpass = "secret", provider = "vantor")
+  })
+  expect_s3_class(app_v, "shiny.appobj")
+  expect_equal(getOption("susolisting.provider"), "vantor")
+
+  expect_no_warning({
+    app_m <- runListingAppServer(admuser = "admin", admpass = "secret", provider = "maxar")
+  })
+  expect_s3_class(app_m, "shiny.appobj")
+  expect_equal(getOption("susolisting.provider"), "vantor")
 })
 
 test_that("UI modules construct valid Shiny tag objects", {

@@ -11,6 +11,7 @@
 #' @noRd
 #' @keywords internal
 main_server <- function(input, output, session) {
+  provider <- resolve_map_provider()
 
   get_app_download_dir <- function() {
     appdir <- file.path(tools::R_user_dir("susolisting", which = "data"), "download")
@@ -33,48 +34,115 @@ main_server <- function(input, output, session) {
 
   ## Start-up Modal
   shiny::observe({
-    shinyalert::shinyalert(
-      inputId = "startup",
-      title = "Welcome to the Survey Solutions Listing Application!",
-      text = shiny::tagList(
-        shiny::h4(
-          "Please make sure you have read the relevant documentation, available under: https://datanalytics.worldbank.org/SpatialSamplingManual/
-           To continue please provide your Google API key and your username."
+    if (identical(provider, "vantor")) {
+      shinyalert::shinyalert(
+        inputId = "startup",
+        title = "Welcome to the Survey Solutions Listing Application!",
+        text = shiny::tagList(
+          shiny::h4(
+            "Please make sure you have read the relevant documentation, available under: https://datanalytics.worldbank.org/SpatialSamplingManual/
+             To continue please provide your Vantor / Maxar API credentials and your username."
+          ),
+          shiny::passwordInput(
+            inputId = "mapkey",
+            label = "",
+            placeholder = "Vantor / Maxar API Key (or set VANTOR_API_KEY)"
+          ),
+          shiny::selectInput(
+            inputId = "vantor_product",
+            label = "Vivid Mosaic Product",
+            choices = c(
+              "Vivid Standard (30 cm)" = "VIVID_STANDARD_30",
+              "Vivid Advanced (15 cm)" = "VIVID_ADVANCED_15"
+            ),
+            selected = "VIVID_STANDARD_30",
+            width = "100%"
+          ),
+          shiny::textInput(
+            inputId = "vantor_username",
+            label = "",
+            placeholder = "Vantor OAuth2 Username / Email (optional)"
+          ),
+          shiny::passwordInput(
+            inputId = "vantor_password",
+            label = "",
+            placeholder = "Vantor OAuth2 Password (optional)"
+          ),
+          shiny::br(),
+          shiny::textInput(
+            inputId = "user",
+            label = "",
+            placeholder = "User Name"
+          )
         ),
-        shiny::passwordInput(
-          inputId = "mapkey",
-          label = "",
-          placeholder = "Google API key"
+        closeOnEsc = TRUE,
+        closeOnClickOutside = FALSE,
+        html = TRUE,
+        type = "success",
+        showConfirmButton = TRUE,
+        showCancelButton = FALSE,
+        confirmButtonText = "OK",
+        confirmButtonCol = "#AEDEF4",
+        timer = 0,
+        imageUrl = "",
+        animation = TRUE
+      )
+    } else {
+      shinyalert::shinyalert(
+        inputId = "startup",
+        title = "Welcome to the Survey Solutions Listing Application!",
+        text = shiny::tagList(
+          shiny::h4(
+            "Please make sure you have read the relevant documentation, available under: https://datanalytics.worldbank.org/SpatialSamplingManual/
+             To continue please provide your Google API key and your username."
+          ),
+          shiny::passwordInput(
+            inputId = "mapkey",
+            label = "",
+            placeholder = "Google API key"
+          ),
+          shiny::br(),
+          shiny::textInput(
+            inputId = "user",
+            label = "",
+            placeholder = "User Name"
+          )
         ),
-        shiny::br(),
-        shiny::textInput(
-          inputId = "user",
-          label = "",
-          placeholder = "User Name"
-        )
-      ),
-      closeOnEsc = TRUE,
-      closeOnClickOutside = FALSE,
-      html = TRUE,
-      type = "success",
-      showConfirmButton = TRUE,
-      showCancelButton = FALSE,
-      confirmButtonText = "OK",
-      confirmButtonCol = "#AEDEF4",
-      timer = 0,
-      imageUrl = "",
-      animation = TRUE
-    )
+        closeOnEsc = TRUE,
+        closeOnClickOutside = FALSE,
+        html = TRUE,
+        type = "success",
+        showConfirmButton = TRUE,
+        showCancelButton = FALSE,
+        confirmButtonText = "OK",
+        confirmButtonCol = "#AEDEF4",
+        timer = 0,
+        imageUrl = "",
+        animation = TRUE
+      )
+    }
   })
 
   mapkey <- shiny::reactiveVal(NULL)
+  vantorProduct <- shiny::reactiveVal("VIVID_STANDARD_30")
   user <- shiny::reactiveVal(NULL)
 
   shiny::observeEvent(input$startup, {
-    if (is.null(input$mapkey) || input$mapkey == "") {
+    resolved_key <- if (!is.null(input$mapkey)) trimws(input$mapkey) else ""
+    if (identical(provider, "vantor") && !nzchar(resolved_key)) {
+      resolved_key <- Sys.getenv("VANTOR_API_KEY", unset = Sys.getenv("MAXAR_API_KEY", unset = ""))
+    }
+
+    if (!nzchar(resolved_key)) {
+      key_title <- if (identical(provider, "vantor")) "Vantor API key missing!" else "Google API key missing!"
+      key_msg <- if (identical(provider, "vantor")) {
+        "You have not provided a Vantor / Maxar API key. Without an API key, it won't be possible to stream satellite imagery in Leaflet. Please refresh the page and provide the correct key."
+      } else {
+        "You have not provided a key. Without a Google API key, it won't be possible to continue. Please refresh the page and provide the correct key."
+      }
       shinyalert::shinyalert(
-        "Google API key missing!",
-        "You have not provided a key. Without a Google API key, it won't be possible to continue. Please refresh the page and provide the correct key.",
+        key_title,
+        key_msg,
         closeOnEsc = TRUE,
         closeOnClickOutside = TRUE,
         html = FALSE,
@@ -106,18 +174,35 @@ main_server <- function(input, output, session) {
       )
       shiny::req(FALSE)
     } else {
-      mapkey(input$mapkey)
+      if (identical(provider, "vantor")) {
+        v_user <- if (!is.null(input$vantor_username)) trimws(input$vantor_username) else ""
+        v_pass <- if (!is.null(input$vantor_password)) input$vantor_password else ""
+        v_prod <- if (!is.null(input$vantor_product) && nzchar(input$vantor_product)) {
+          input$vantor_product
+        } else {
+          "VIVID_STANDARD_30"
+        }
+        vantorProduct(v_prod)
+        vantorr::vantor_auth(
+          api_key = resolved_key,
+          username = if (nzchar(v_user)) v_user else NULL,
+          password = if (nzchar(v_pass)) v_pass else NULL,
+          verbose = FALSE
+        )
+      }
+      mapkey(resolved_key)
 
       # Sanitize user name & show notification with path
       usr <- sanitize_string(input$user)
+      provider_label <- if (identical(provider, "vantor")) "Vantor API credentials" else "Google API key"
 
       appdir <- get_app_download_dir()
       notmessage <- shiny::HTML(
         sprintf(
-          "You are successfully logged in and have provided the required Google API key. Your files for this session will be stored
+          "You are successfully logged in and have provided the required %s. Your files for this session will be stored
            in your personal user directory under, <b>%s/%s_[upload file name]</b>. After uploading the file, you can see the complete file
            path.",
-          appdir, usr
+          provider_label, appdir, usr
         ) %>%
           stringr::str_remove_all("\\n") %>%
           stringr::str_squish()
@@ -256,12 +341,13 @@ main_server <- function(input, output, session) {
     clean_id <- stringr::str_replace_all(as.character(target_area_id), "[!@#$%^&*/\\\\]*", "")
 
     if (is_first_area) {
+      provider_label <- if (identical(provider, "vantor")) "Vantor API credentials" else "Google API key"
       notmessage <- shiny::HTML(
         sprintf(
-          "You are successfully logged in and have provided the required Google API key. Your files for this session will be stored
+          "You are successfully logged in and have provided the required %s. Your files for this session will be stored
            in your personal user directory under, <b>%s</b>. After uploading the file, you can see the complete file
            path.",
-          curr_fp
+          provider_label, curr_fp
         ) %>%
           stringr::str_remove_all("\\n") %>%
           stringr::str_squish()
@@ -440,38 +526,94 @@ main_server <- function(input, output, session) {
   })
 
   ##############################################################################
-  ## CREATE AND UPDATE GOOGLE MAP
+  ## CREATE AND UPDATE SATELLITE MAP (GOOGLE OR VANTOR / LEAFLET)
   ##############################################################################
-  output$detailSampMap <- googleway::renderGoogle_map({
-    map_key <- shiny::req(mapkey())
-    shiny::req(boundaryFile(), areaIDs())
-    lga.sel <- shiny::isolate(lgaSel())
-    shiny::req(lga.sel)
-    tmp.points_sf <- shiny::isolate(lgaPoint())
+  if (identical(provider, "vantor")) {
+    output$detailSampMap <- leaflet::renderLeaflet({
+      map_key <- shiny::req(mapkey())
+      shiny::req(boundaryFile(), areaIDs())
+      lga.sel <- shiny::isolate(lgaSel())
+      shiny::req(lga.sel)
+      tmp.points_sf <- shiny::isolate(lgaPoint())
+      vantor_prod <- shiny::isolate(vantorProduct())
+      bb <- as.numeric(sf::st_bbox(lga.sel))
 
-    map <- googleway::google_map(
-      key = map_key,
-      event_return_type = "list",
-      map_type = "satellite",
-      libraries = c("visualization", "geometry", "places")
-    ) %>%
-      googleway::add_polygons(
-        data = lga.sel,
-        layer_id = "bounds",
-        focus_layer = TRUE,
-        fill_opacity = 0.1
-      )
+      map <- leaflet::leaflet(options = leaflet::leafletOptions(maxZoom = 21L)) %>%
+        vantorr::add_vantor_basemap(
+          product = vantor_prod,
+          service = "WMTS",
+          api_key = map_key,
+          group = "Vantor Vivid",
+          layerId = "vantor_base",
+          verbose = FALSE
+        ) %>%
+        vantorr::add_vantor_seamlines(
+          product = vantor_prod,
+          mode = "wms",
+          api_key = map_key,
+          group = "Vantor Seamlines",
+          verbose = FALSE
+        ) %>%
+        leaflet::hideGroup("Vantor Seamlines") %>%
+        leaflet::addPolygons(
+          data = lga.sel,
+          layerId = "bounds",
+          group = "bounds",
+          color = "#FF0000",
+          weight = 2,
+          fillColor = "#FF0000",
+          fillOpacity = 0.1,
+          options = leaflet::pathOptions(interactive = FALSE, clickable = FALSE)
+        ) %>%
+        leaflet::fitBounds(
+          lng1 = bb[1], lat1 = bb[2],
+          lng2 = bb[3], lat2 = bb[4]
+        ) %>%
+        leaflet::addLayersControl(
+          baseGroups = c("Vantor Vivid"),
+          overlayGroups = c("Vantor Seamlines"),
+          options = leaflet::layersControlOptions(collapsed = TRUE, position = "topleft")
+        )
 
-    if (!is.null(tmp.points_sf)) {
-      map <- map %>%
-        googleway::add_markers(data = tmp.points_sf, layer_id = "house")
-    }
+      if (!is.null(tmp.points_sf)) {
+        map <- map %>%
+          leaflet::addMarkers(data = tmp.points_sf, group = "house")
+      }
 
-    map %>% add_marker_drawing()
-  })
+      map %>% add_marker_drawing()
+    })
+  } else {
+    output$detailSampMap <- googleway::renderGoogle_map({
+      map_key <- shiny::req(mapkey())
+      shiny::req(boundaryFile(), areaIDs())
+      lga.sel <- shiny::isolate(lgaSel())
+      shiny::req(lga.sel)
+      tmp.points_sf <- shiny::isolate(lgaPoint())
+
+      map <- googleway::google_map(
+        key = map_key,
+        event_return_type = "list",
+        map_type = "satellite",
+        libraries = c("visualization", "geometry", "places")
+      ) %>%
+        googleway::add_polygons(
+          data = lga.sel,
+          layer_id = "bounds",
+          focus_layer = TRUE,
+          fill_opacity = 0.1
+        )
+
+      if (!is.null(tmp.points_sf)) {
+        map <- map %>%
+          googleway::add_markers(data = tmp.points_sf, layer_id = "house")
+      }
+
+      map %>% add_marker_drawing()
+    })
+  }
   shiny::outputOptions(output, "detailSampMap", suspendWhenHidden = FALSE)
 
-  ## Collect markers placed on the Google Map
+  ## Collect markers placed on the Satellite Map
   shiny::observeEvent(input$detailSampMap_markercomplete, {
     pos <- input$detailSampMap_markercomplete$position
     tmp.counter <- counter()
@@ -493,28 +635,56 @@ main_server <- function(input, output, session) {
     pointsCollectorGoogle(data.table::rbindlist(points, fill = TRUE))
   })
 
-  ## Update Google Map when switching areas or refreshing
+  ## Update Satellite Map when switching areas or refreshing
   shiny::observeEvent(clearMap(), {
     lga.sel <- lgaSel()
     shiny::req(lga.sel)
     tmp.points_sf <- lgaPoint()
 
-    upd <- googleway::google_map_update(map_id = "detailSampMap") %>%
-      clear_marker_drawing() %>%
-      googleway::clear_polygons(layer_id = "bounds") %>%
-      googleway::clear_markers(layer_id = "house") %>%
-      googleway::add_polygons(
-        data = lga.sel,
-        layer_id = "bounds",
-        focus_layer = TRUE,
-        fill_opacity = 0.1
-      )
+    if (identical(provider, "vantor")) {
+      bb <- as.numeric(sf::st_bbox(lga.sel))
+      upd <- leaflet::leafletProxy("detailSampMap", session = session) %>%
+        clear_marker_drawing() %>%
+        leaflet::clearGroup("bounds") %>%
+        leaflet::clearGroup("house") %>%
+        leaflet::addPolygons(
+          data = lga.sel,
+          layerId = "bounds",
+          group = "bounds",
+          color = "#FF0000",
+          weight = 2,
+          fillColor = "#FF0000",
+          fillOpacity = 0.1,
+          options = leaflet::pathOptions(interactive = FALSE, clickable = FALSE)
+        ) %>%
+        leaflet::fitBounds(
+          lng1 = bb[1], lat1 = bb[2],
+          lng2 = bb[3], lat2 = bb[4]
+        )
 
-    if (!is.null(tmp.points_sf)) {
-      upd <- upd %>%
-        googleway::add_markers(data = tmp.points_sf, layer_id = "house")
+      if (!is.null(tmp.points_sf)) {
+        upd <- upd %>%
+          leaflet::addMarkers(data = tmp.points_sf, group = "house")
+      }
+      upd %>% add_marker_drawing()
+    } else {
+      upd <- googleway::google_map_update(map_id = "detailSampMap") %>%
+        clear_marker_drawing() %>%
+        googleway::clear_polygons(layer_id = "bounds") %>%
+        googleway::clear_markers(layer_id = "house") %>%
+        googleway::add_polygons(
+          data = lga.sel,
+          layer_id = "bounds",
+          focus_layer = TRUE,
+          fill_opacity = 0.1
+        )
+
+      if (!is.null(tmp.points_sf)) {
+        upd <- upd %>%
+          googleway::add_markers(data = tmp.points_sf, layer_id = "house")
+      }
+      upd %>% add_marker_drawing()
     }
-    upd %>% add_marker_drawing()
   }, ignoreInit = TRUE)
 
   ##############################################################################
@@ -543,9 +713,15 @@ main_server <- function(input, output, session) {
     pointsCollectorGoogle(
       data.table::data.table(long = numeric(0), lat = numeric(0), area_id = character(0))
     )
-    googleway::google_map_update(map_id = "detailSampMap") %>%
-      clear_marker_drawing() %>%
-      googleway::clear_markers(layer_id = "house")
+    if (identical(provider, "vantor")) {
+      leaflet::leafletProxy("detailSampMap", session = session) %>%
+        clear_marker_drawing() %>%
+        leaflet::clearGroup("house")
+    } else {
+      googleway::google_map_update(map_id = "detailSampMap") %>%
+        clear_marker_drawing() %>%
+        googleway::clear_markers(layer_id = "house")
+    }
     areaRefreshTrigger(areaRefreshTrigger() + 1L)
     shinyjs::disable("loadPrevEA")
   }, ignoreInit = TRUE)

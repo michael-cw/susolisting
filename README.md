@@ -24,9 +24,10 @@ valuable tools for enumerating and extracting survey units.
     those sampled with the [JDC-Survey Solutions Spatial Sampling
     application](https://github.com/michael-cw/susogrdframe)), you can
     identify and enumerate all visible buildings within specified
-    boundaries on Google Maps. The enumerated buildings form the second
-    stage sampling frame, allowing for precise extraction of survey
-    units within the cluster.
+    boundaries on Google Maps or Vantor (Maxar) satellite imagery via
+    [‘vantorr’](https://github.com/michael-cw/vantorr). The enumerated
+    buildings form the second stage sampling frame, allowing for precise
+    extraction of survey units within the cluster.
 
 2.  **Admin Interface**: This intuitive interface lets you:
 
@@ -59,8 +60,10 @@ For detailed information on how to get started, please consult our
 
 ## Prerequisites
 
-This application requires a Google Maps API key. Get yours
-[here](https://mapsplatform.google.com/).
+This application requires either a Google Maps API key (get yours
+[here](https://mapsplatform.google.com/)) when using
+`provider = "google"` (the default), or Vantor / Maxar API credentials
+when using `provider = "vantor"`.
 
 ## Installation
 
@@ -76,11 +79,12 @@ This application requires a Google Maps API key. Get yours
 install.packages("devtools")
 ```
 
-4.  Ensure `SurveySolutionsAPIv2` is installed, then install
-    `susolisting`:
+4.  Ensure `SurveySolutionsAPIv2` and `vantorr` are installed, then
+    install `susolisting`:
 
 ``` r
 devtools::install_github("michael-cw/SurveySolutionsAPIv2")
+devtools::install_github("michael-cw/vantorr")
 devtools::install_github("michael-cw/susolisting")
 ```
 
@@ -96,7 +100,11 @@ the downloaded file is safely stored.**
 
 ``` r
 library(susolisting)
+# Default: Google Maps satellite imagery
 susolisting::runListingApp()
+
+# Or use Vantor / Maxar Vivid satellite imagery via leaflet + vantorr:
+susolisting::runListingApp(provider = "vantor")
 ```
 
 The second option allows you to run the application in *team* mode. This
