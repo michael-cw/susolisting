@@ -130,7 +130,27 @@ suso_drawing_js <- function() {
           }
         };
 
+        function ensureShinyOutputClasses(map_id) {
+          var mapDiv = document.getElementById(map_id);
+          if (mapDiv && mapDiv.classList && (mapDiv.classList.contains('googlemap') || mapDiv.classList.contains('google_map'))) {
+            mapDiv.classList.add('google_map', 'html-widget', 'html-widget-output', 'shiny-bound-output');
+            mapDiv.classList.remove('recalculating');
+          }
+        }
+
+        if (window.jQuery) {
+          window.jQuery(document).on('shiny:value shiny:visualchange', function(event) {
+            if (event && event.target && event.target.id) {
+              var targetId = event.target.id;
+              window.setTimeout(function() { ensureShinyOutputClasses(targetId); }, 0);
+              window.setTimeout(function() { ensureShinyOutputClasses(targetId); }, 50);
+              window.setTimeout(function() { ensureShinyOutputClasses(targetId); }, 150);
+            }
+          });
+        }
+
         function syncBoundsPolygonsNonClickable(map_id) {
+          ensureShinyOutputClasses(map_id);
           var polys = window[map_id + 'googlePolygonbounds'];
           if (Array.isArray(polys)) {
             for (var i = 0; i < polys.length; i++) {

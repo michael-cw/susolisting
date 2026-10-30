@@ -12,6 +12,18 @@
 #' @keywords internal
 main_server <- function(input, output, session) {
 
+  get_app_download_dir <- function() {
+    appdir <- file.path(tools::R_user_dir("susolisting", which = "data"), "download")
+    if (!dir.exists(appdir)) {
+      dir.create(appdir, recursive = TRUE, showWarnings = FALSE)
+    }
+    if (!dir.exists(appdir) || file.access(appdir, 2) != 0) {
+      appdir <- file.path(tempdir(), "susolisting", "download")
+      dir.create(appdir, recursive = TRUE, showWarnings = FALSE)
+    }
+    appdir
+  }
+
   # Disable INDIVIDUAL download when admuser/admpass options are set
   shiny::observe({
     if (!is.null(getOption("admuser")) && !is.null(getOption("admpass"))) {
@@ -99,7 +111,7 @@ main_server <- function(input, output, session) {
       # Sanitize user name & show notification with path
       usr <- sanitize_string(input$user)
 
-      appdir <- file.path(tools::R_user_dir("susolisting", which = "data"), "download")
+      appdir <- get_app_download_dir()
       notmessage <- shiny::HTML(
         sprintf(
           "You are successfully logged in and have provided the required Google API key. Your files for this session will be stored
@@ -180,10 +192,7 @@ main_server <- function(input, output, session) {
   ##############################################################################
   fp <- shiny::reactiveVal()
   shiny::observe({
-    appdir <- file.path(tools::R_user_dir("susolisting", which = "data"), "download")
-    if (!dir.exists(appdir)) {
-      dir.create(appdir, recursive = TRUE, showWarnings = FALSE)
-    }
+    appdir <- get_app_download_dir()
     fp(file.path(appdir, paste0(user(), "_", uplFileName())))
   })
 
@@ -347,13 +356,16 @@ main_server <- function(input, output, session) {
     return(tmp.shp.sel)
   })
 
-  ## Trigger for map updates
+  ## Trigger for map updates when navigating between areas
   clearMap <- shiny::reactive({
-    list(counter(), input$area_id, input$loadPrevEA, input$loadNextEA, areaRefreshTrigger())
+    shiny::req(input$area_id)
+    list(counter(), input$loadPrevEA, input$loadNextEA)
   })
 
   ## Existing saved points for active EA
-  lgaPoint <- shiny::eventReactive(clearMap(), {
+  lgaPoint <- shiny::reactive({
+    clearMap()
+    areaRefreshTrigger()
     ids <- shiny::req(areaIDs())
     tmp.counter <- shiny::req(counter())
     shiny::validate(shiny::need(tmp.counter >= 1 && tmp.counter <= length(ids), message = FALSE))
@@ -432,9 +444,10 @@ main_server <- function(input, output, session) {
   ##############################################################################
   output$detailSampMap <- googleway::renderGoogle_map({
     map_key <- shiny::req(mapkey())
-    lga.sel <- lgaSel()
+    shiny::req(boundaryFile(), areaIDs())
+    lga.sel <- shiny::isolate(lgaSel())
     shiny::req(lga.sel)
-    tmp.points_sf <- lgaPoint()
+    tmp.points_sf <- shiny::isolate(lgaPoint())
 
     map <- googleway::google_map(
       key = map_key,
@@ -456,6 +469,7 @@ main_server <- function(input, output, session) {
 
     map %>% add_marker_drawing()
   })
+  shiny::outputOptions(output, "detailSampMap", suspendWhenHidden = FALSE)
 
   ## Collect markers placed on the Google Map
   shiny::observeEvent(input$detailSampMap_markercomplete, {

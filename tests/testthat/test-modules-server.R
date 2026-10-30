@@ -152,8 +152,11 @@ test_that("main_server renders detailSampMap after startup, shapefile upload, an
   poly2 <- sf::st_polygon(list(rbind(
     c(10.2, 50.0), c(10.3, 50.0), c(10.3, 50.1), c(10.2, 50.1), c(10.2, 50.0)
   )))
-  sfc <- sf::st_sfc(poly1, poly2, crs = 4326)
-  shp_in <- sf::st_sf(ea_code = c("EA_01", "EA_02"), geometry = sfc)
+  poly3 <- sf::st_polygon(list(rbind(
+    c(10.4, 50.0), c(10.5, 50.0), c(10.5, 50.1), c(10.4, 50.1), c(10.4, 50.0)
+  )))
+  sfc <- sf::st_sfc(poly1, poly2, poly3, crs = 4326)
+  shp_in <- sf::st_sf(ea_code = c("EA_01", "EA_02", "EA_03"), geometry = sfc)
   shp_path <- file.path(tmp_dir, "bounds.shp")
   sf::st_write(shp_in, shp_path, quiet = TRUE)
 
@@ -177,7 +180,7 @@ test_that("main_server renders detailSampMap after startup, shapefile upload, an
     expect_match(map_json, "add_polygons")
     expect_match(map_json, "add_suso_drawing")
 
-    # 4. Simulate placing a building marker on the map
+    # 4. Simulate placing a building marker on EA_01
     session$setInputs(
       detailSampMap_markercomplete = list(
         position = list(lat = 50.05, lng = 10.05),
@@ -190,7 +193,22 @@ test_that("main_server renders detailSampMap after startup, shapefile upload, an
     # 5. Click Next EA to persist marker and advance to EA_02
     session$setInputs(loadNextEA = 1L)
     expect_equal(counter(), 2L)
+    expect_equal(lgaSel()$ea_code, "EA_02")
     expect_equal(nrow(pointsCollectorGoogle()), 0L)
+
+    # 6. Place marker on EA_02 and advance to EA_03
+    session$setInputs(
+      detailSampMap_markercomplete = list(
+        position = list(lat = 50.05, lng = 10.25),
+        randomValue = 0.6
+      )
+    )
+    expect_equal(nrow(pointsCollectorGoogle()), 1L)
+    expect_equal(pointsCollectorGoogle()$area_id, "EA_02")
+    session$setInputs(loadNextEA = 2L)
+    expect_equal(counter(), 3L)
+    expect_equal(lgaSel()$ea_code, "EA_03")
+    expect_true(all(c("EA_01", "EA_02") %in% savedFiles()))
     on.exit(unlink(fp(), recursive = TRUE), add = TRUE)
   })
 })

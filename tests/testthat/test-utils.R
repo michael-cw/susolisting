@@ -83,4 +83,5 @@ test_that("add_marker_drawing and clear_marker_drawing work on google_map and go
   expect_s3_class(js_tag, "shiny.tag")
   expect_match(as.character(js_tag), "add_suso_drawing")
   expect_match(as.character(js_tag), "clear_suso_drawing")
+  expect_match(as.character(js_tag), "ensureShinyOutputClasses")
 })
