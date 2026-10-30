@@ -73,6 +73,8 @@ In administrator mode (`modal_adminspsample_server()` and `modal_spsample2stage_
    - `ea` and `area_id`: Cluster identifiers
    - `lon_WGS84`, `lat_WGS84`: Geographic coordinates in decimal degrees
    - `wgt`: Design weight ($N_h / n_h$)
+4. **Automated Word Sampling Report (`sampling_report_server()` / `build_sampling_report_docx()`)**:
+   Alongside the zipped CSV sample download, the sampling module provides a dedicated `officer`-powered reporting module (`R/shiny_sampling_report_module.R`) that generates a World Bank Group-styled `.docx` report documenting the frame, the spatial sampling process and parameters, and the resulting sample diagnostics.
 
 ---
 

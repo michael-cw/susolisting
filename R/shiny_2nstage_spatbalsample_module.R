@@ -94,7 +94,7 @@ modal_spsample2stage_ui <- function(id,
       ),
       shiny::fluidRow(
         shiny::column(
-          6,
+          4,
           shinyjs::disabled(
             shiny::actionButton(
               ns("createSample"),
@@ -106,8 +106,12 @@ modal_spsample2stage_ui <- function(id,
           )
         ),
         shiny::column(
-          6,
+          4,
           dwl_dataUI(ns("dwlsample"), style = style)
+        ),
+        shiny::column(
+          4,
+          sampling_report_ui(ns("dwlreport"), style = style)
         )
       )
     )
@@ -200,6 +204,7 @@ modal_spsample2stage_server <- function(id,
     mapsampledata <- shiny::reactiveVal(NULL)
     dwlsampledata <- shiny::reactiveVal(NULL)
     sample_seed <- shiny::reactiveVal(NULL)
+    sampling_params <- shiny::reactiveVal(NULL)
 
     shiny::observeEvent(input$createSample, {
       shiny::req(framedatasf(), input$sampSEED, input$clustervar)
@@ -256,6 +261,15 @@ modal_spsample2stage_server <- function(id,
       mapsampledata(tabsf)
       tab <- as.data.frame(sf::st_set_geometry(tabsf, NULL))
       dwlsampledata(tab)
+      sampling_params(list(
+        clustervar = input$clustervar,
+        seed = input$sampSEED,
+        samplemode = input$samplemode,
+        n_sample = input$n_sample,
+        mindist = if (identical(input$samplemode, "Balanced w. minimum distance")) input$mindist else NA_real_,
+        utm_epsg = sf::st_crs(frdatsf)$epsg,
+        timestamp = Sys.time()
+      ))
     })
 
     # Download sample as zipped CSV
@@ -266,6 +280,27 @@ modal_spsample2stage_server <- function(id,
         paste0(
           "SpatSamp_2stage_",
           input$samplemode,
+          ifelse(
+            input$samplemode == "Balanced w. minimum distance",
+            paste0("_mindist_", input$mindist, "m"),
+            ""
+          ),
+          "_seed_",
+          input$sampSEED
+        )
+      )
+    )
+
+    # Download Word sampling report via officer
+    sampling_report_server(
+      "dwlreport",
+      frame_data = framedata,
+      sample_data = dwlsampledata,
+      sampling_params = sampling_params,
+      file_name = shiny::reactive(
+        paste0(
+          "SamplingReport_2stage_",
+          gsub("[^A-Za-z0-9_]", "_", as.character(input$samplemode)),
           ifelse(
             input$samplemode == "Balanced w. minimum distance",
             paste0("_mindist_", input$mindist, "m"),

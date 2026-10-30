@@ -63,6 +63,7 @@ test_that("UI modules construct valid Shiny tag objects", {
   expect_s3_class(suso_map_idUI_maptable("id_map", height = "10vh"), "shiny.tag.list")
 
   expect_s3_class(dwl_dataUI("dwl_mod"), "shiny.tag.list")
+  expect_s3_class(sampling_report_ui("rep_mod"), "shiny.tag.list")
   expect_s3_class(zipFileInput_ui("zip_mod", "Upload", "text/csv"), "shiny.tag.list")
 
   btns <- shinyInput(shiny::actionButton, 2, c("btn1", "btn2"), label = "Click")

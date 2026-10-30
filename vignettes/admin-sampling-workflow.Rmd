@@ -127,4 +127,6 @@ knitr::include_graphics("figures/ui-admin-frame-and-sample.png")
    - **Number of Segments** and **Total Sample Population**
    - **Average, Minimum, and Maximum Sampling Weight (`wgt`)**
    - **Sampling Weight Coefficient of Variation (`Sampling Weight CV`)**
-3. Click **Download Data** to export a `.zip` archive named `SpatSamp_2stage_<mode>_seed_<seed>.zip` containing the sampled units CSV, or proceed directly to the **SuSo** tab to push assignments to your Survey Solutions server.
+3. Click **Download Data** to export a `.zip` archive named `SpatSamp_2stage_<mode>_seed_<seed>.zip` containing the sampled units CSV.
+4. Click **Download Sampling Report** to generate and download a Microsoft Word (`.docx`) report (`SamplingReport_2stage_<mode>_seed_<seed>.docx`) created via the `officer` package and formatted according to the World Bank Group Branding and Visual Identity Guidelines (complete with the institutional cover logo, frame summary tables, sampling methodology and reproducibility parameters, design weight diagnostics, and cluster-level allocation charts and tables).
+5. Alternatively, proceed directly to the **SuSo** tab to push assignments to your Survey Solutions server.

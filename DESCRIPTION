@@ -24,6 +24,7 @@ Imports:
     googleway (>= 2.7.5),
     leaflet,
     magrittr,
+    officer,
     readr,
     sf,
     shiny,

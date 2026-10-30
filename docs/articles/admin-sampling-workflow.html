@@ -233,7 +233,7 @@ can be replicated.</li>
 <li>
 <strong><code>Balanced</code> (Generalized Random Tessellation
 Stratified - GRTS)</strong>: Draws a spatially balanced sample within
-each Enumeration Area using <code><a href="https://usepa.github.io/spsurvey/reference/grts.html" class="external-link">spsurvey::grts()</a></code>. This ensures
+each Enumeration Area using <code><a href="https://rdrr.io/pkg/spsurvey/man/grts.html" class="external-link">spsurvey::grts()</a></code>. This ensures
 sampled buildings are well-distributed across the geography of each
 cluster rather than clumped in one corner.</li>
 <li>
@@ -243,12 +243,12 @@ numeric input. Prior to sampling, <code>susolisting</code> automatically
 projects the WGS84 coordinates into the appropriate UTM zone
 (<code>EPSG:326xx</code> or <code>EPSG:327xx</code> in meters) via
 <code>project_to_utm()</code> and passes <code>mindis</code> to
-<code><a href="https://usepa.github.io/spsurvey/reference/grts.html" class="external-link">spsurvey::grts()</a></code> so no two sampled buildings are closer
+<code><a href="https://rdrr.io/pkg/spsurvey/man/grts.html" class="external-link">spsurvey::grts()</a></code> so no two sampled buildings are closer
 than the specified threshold ( when feasible).</li>
 <li>
 <strong><code>Random</code> (Independent Random Sample -
 IRS)</strong>: Draws an equal-probability simple random sample within
-each cluster using <code><a href="https://usepa.github.io/spsurvey/reference/irs.html" class="external-link">spsurvey::irs()</a></code>.</li>
+each cluster using <code><a href="https://rdrr.io/pkg/spsurvey/man/irs.html" class="external-link">spsurvey::irs()</a></code>.</li>
 </ul>
 </li>
 <li>
@@ -291,9 +291,17 @@ Population</strong>
 <li>Click <strong>Download Data</strong> to export a <code>.zip</code>
 archive named
 <code>SpatSamp_2stage_&lt;mode&gt;_seed_&lt;seed&gt;.zip</code>
-containing the sampled units CSV, or proceed directly to the
-<strong>SuSo</strong> tab to push assignments to your Survey Solutions
-server.</li>
+containing the sampled units CSV.</li>
+<li>Click <strong>Download Sampling Report</strong> to generate and
+download a Microsoft Word (<code>.docx</code>) report
+(<code>SamplingReport_2stage_&lt;mode&gt;_seed_&lt;seed&gt;.docx</code>)
+created via the <code>officer</code> package and formatted according to
+the World Bank Group Branding and Visual Identity Guidelines (complete
+with the institutional cover logo, frame summary tables, sampling
+methodology and reproducibility parameters, design weight diagnostics,
+and cluster-level allocation charts and tables).</li>
+<li>Alternatively, proceed directly to the <strong>SuSo</strong> tab to
+push assignments to your Survey Solutions server.</li>
 </ol>
 </div>
 </div>

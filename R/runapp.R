@@ -43,8 +43,9 @@
 #' @importFrom shinyalert shinyalert
 #' @importFrom sf st_as_sf st_bbox st_is_longlat st_set_geometry st_transform
 #' @importFrom waiter spin_fading_circles useWaiter waiter_show waiter_hide
-#' @importFrom graphics text
-#' @importFrom stats runif setNames
+#' @importFrom graphics barplot grid legend par text
+#' @importFrom stats median runif sd setNames
+#' @importFrom utils packageVersion
 #' @export
 runListingApp <- function(launch.browser = TRUE,
                           admuser = NULL,

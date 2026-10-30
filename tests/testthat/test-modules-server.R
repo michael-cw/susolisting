@@ -110,6 +110,86 @@ test_that("modal_spsample2stage_server draws balanced and random 2nd-stage sampl
   )
 })
 
+test_that("build_sampling_report_docx and sampling_report_server create a World Bank styled Word report", {
+  frame_dt <- data.table::data.table(
+    ea = c(rep("EA_1", 15), rep("EA_2", 8)),
+    area_id = c(rep("1", 15), rep("2", 8)),
+    long = seq(10.01, 10.23, length.out = 23),
+    lat = seq(50.01, 50.23, length.out = 23)
+  )
+  sample_dt <- data.table::data.table(
+    siteID = sprintf("Site-%02d", 1:12),
+    ea = c(rep("EA_1", 8), rep("EA_2", 4)),
+    wgt = c(rep(15 / 8, 8), rep(8 / 4, 4)),
+    lon_WGS84 = seq(10.01, 10.20, length.out = 12),
+    lat_WGS84 = seq(50.01, 50.20, length.out = 12)
+  )
+  params <- list(
+    clustervar = "ea",
+    seed = 4321L,
+    samplemode = "Balanced w. minimum distance",
+    n_sample = 8L,
+    mindist = 15,
+    utm_epsg = 32632L,
+    timestamp = as.POSIXct("2026-10-30 12:00:00", tz = "UTC")
+  )
+
+  tmp_docx <- tempfile(fileext = ".docx")
+  on.exit(unlink(tmp_docx), add = TRUE)
+
+  logo_file <- resolve_wbg_logo_path()
+  expect_true(nzchar(logo_file))
+  expect_true(file.exists(logo_file))
+
+  out_path <- build_sampling_report_docx(
+    frame_data = frame_dt,
+    sample_data = sample_dt,
+    sampling_params = params,
+    file = tmp_docx
+  )
+  expect_equal(out_path, tmp_docx)
+  expect_true(file.exists(tmp_docx))
+  expect_gt(file.info(tmp_docx)$size, 10000)
+
+  doc_parsed <- officer::read_docx(tmp_docx)
+  summary_df <- officer::docx_summary(doc_parsed)
+  full_text <- paste(summary_df$text, collapse = "\n")
+  expect_match(full_text, "Second-Stage Spatial Sampling Report")
+  expect_match(full_text, "1\\. Executive Summary")
+  expect_match(full_text, "2\\. Second-Stage Sampling Frame")
+  expect_match(full_text, "3\\. Sampling Methodology and Process")
+  expect_match(full_text, "4\\. Resulting Second-Stage Sample")
+  expect_match(full_text, "4321")
+  expect_match(full_text, "15 meters")
+
+  # Verify embedded logo image and plot in Word package media directory
+  unpack_dir <- tempfile("docx_unpack_")
+  on.exit(unlink(unpack_dir, recursive = TRUE), add = TRUE)
+  officer::unpack_folder(file = tmp_docx, folder = unpack_dir)
+  media_files <- list.files(file.path(unpack_dir, "word", "media"))
+  expect_gte(length(media_files), 2L)
+
+  # Test sampling_report_server module
+  frame_rx <- shiny::reactiveVal(frame_dt)
+  sample_rx <- shiny::reactiveVal(sample_dt)
+  params_rx <- shiny::reactiveVal(params)
+  shiny::testServer(
+    sampling_report_server,
+    args = list(
+      frame_data = frame_rx,
+      sample_data = sample_rx,
+      sampling_params = params_rx,
+      file_name = shiny::reactive("UnitTest_SamplingReport")
+    ),
+    {
+      session$setInputs(generateReport = 1L)
+      expect_true(!is.null(report_path()))
+      expect_true(file.exists(report_path()))
+      on.exit(unlink(report_path()), add = TRUE)
+    }
+  )
+})
+
 test_that("modal_adminspsample_server verifies admin credentials", {
   old_admuser <- getOption("admuser")
   old_admpass <- getOption("admpass")
