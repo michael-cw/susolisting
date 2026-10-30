@@ -34,7 +34,7 @@ The Survey Solutions Listing Application forms an integral part of a comprehensi
 
 3. **Sample Drawing**: For this stage, the application leverages the ['spsurvey'](https://usepa.github.io/spsurvey/) package, which facilitates the drawing of spatially balanced or random second-stage samples.
 
-4. **Assignment to Supervisors**: Once the sample is generated, you can assign it directly to the Survey Solutions supervisors. This assignment is performed through a streamlined interface grounded on ['SurveySolutionsAPIv2'](https://github.com/michael-cw/SurveySolutionsAPIv2) (REST and GraphQL APIs).
+4. **Assignment to Supervisors**: Once the sample is generated, you can assign it directly to the Survey Solutions supervisors. This assignment is performed through a streamlined interface grounded on ['SurveySolutionsAPIv2'](https://cran.r-project.org/package=SurveySolutionsAPIv2) (REST and GraphQL APIs).
 
 #### Usage Overview
 
@@ -59,10 +59,9 @@ This application requires either a Google Maps API key (get yours [here](https:/
 install.packages("devtools")
 ```
 
-4. Ensure `SurveySolutionsAPIv2` and `vantorr` are installed, then install `susolisting`:
+4. Install `vantorr` and `susolisting` from GitHub (CRAN dependencies including `SurveySolutionsAPIv2` are installed automatically):
 
 ```{r install, eval=FALSE, echo=TRUE}
-devtools::install_github("michael-cw/SurveySolutionsAPIv2")
 devtools::install_github("michael-cw/vantorr")
 devtools::install_github("michael-cw/susolisting")
 ```

@@ -44,7 +44,7 @@ valuable tools for enumerating and extracting survey units.
 4.  **Assignment to Supervisors**: Once the sample is generated, you can
     assign it directly to the Survey Solutions supervisors. This
     assignment is performed through a streamlined interface grounded on
-    [‘SurveySolutionsAPIv2’](https://github.com/michael-cw/SurveySolutionsAPIv2)
+    [‘SurveySolutionsAPIv2’](https://cran.r-project.org/package=SurveySolutionsAPIv2)
     (REST and GraphQL APIs).
 
 #### Usage Overview
@@ -79,11 +79,10 @@ when using `provider = "vantor"`.
 install.packages("devtools")
 ```
 
-4.  Ensure `SurveySolutionsAPIv2` and `vantorr` are installed, then
-    install `susolisting`:
+4.  Install `vantorr` and `susolisting` from GitHub (CRAN dependencies
+    including `SurveySolutionsAPIv2` are installed automatically):
 
 ``` r
-devtools::install_github("michael-cw/SurveySolutionsAPIv2")
 devtools::install_github("michael-cw/vantorr")
 devtools::install_github("michael-cw/susolisting")
 ```
