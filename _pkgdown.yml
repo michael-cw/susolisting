@@ -1,0 +1,39 @@
+url: https://michael-cw.github.io/susolisting/
+
+template:
+  bootstrap: 5
+  bslib:
+    primary: "#0d47a1"
+
+navbar:
+  structure:
+    left:  [intro, reference, articles]
+    right: [search, github]
+  components:
+    articles:
+      text: Workflows & Guides
+      menu:
+      - text: "1. Enumerator Guide: Marking Buildings in Enumeration Areas"
+        href: articles/enumerator-workflow.html
+      - text: "2. Administrator Guide: Frame Compilation and Second-Stage Sampling"
+        href: articles/admin-sampling-workflow.html
+      - text: "3. Data Flow: From Building Listing to Survey Solutions Assignment"
+        href: articles/data-flow-and-suso-assignment.html
+
+articles:
+- title: User & Administrator Workflows
+  navbar: ~
+  contents:
+  - enumerator-workflow
+  - admin-sampling-workflow
+  - data-flow-and-suso-assignment
+
+reference:
+- title: Launch Application
+  desc: >
+    Functions to launch the interactive Survey Solutions Listing Application
+    locally or on a Shiny Server using Google Maps or Vantor (Maxar) satellite imagery.
+  contents:
+  - runListingApp
+  - runListingAppServer
+  - susolisting-package

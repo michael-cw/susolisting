@@ -10,7 +10,8 @@ Description: A Shiny application to mark buildings on a Google or Vantor
     supports second-stage spatially balanced sampling via 'spsurvey', and
     integrates with 'Survey Solutions' for team assignment creation.
 License: MIT + file LICENSE
-URL: https://github.com/michael-cw/susolisting
+URL: https://github.com/michael-cw/susolisting,
+    https://michael-cw.github.io/susolisting/
 BugReports: https://github.com/michael-cw/susolisting/issues
 Imports: 
     data.table,
@@ -34,7 +35,10 @@ Imports:
     waiter,
     zip
 Suggests: 
+    knitr,
+    rmarkdown,
     testthat (>= 3.0.0)
+VignetteBuilder: knitr
 Config/testthat/edition: 3
 Encoding: UTF-8
 Language: en
