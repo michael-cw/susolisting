@@ -1,6 +1,7 @@
+
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-<a href='https://docs.mysurvey.solutions/'><img src="man/figures/susospatial.png" alt="Survey Solutions Spatial Sampling and Listing logo" align="right" height="139"/></a>
+<a href='https://docs.mysurvey.solutions/'><img src="man/figures/susospatial.png" alt="Survey Solutions Spatial Sampling and Listing logo" align="right" height="139" style="float:right; height:139px;"/></a>
 
 # Survey Solutions Listing Application
 

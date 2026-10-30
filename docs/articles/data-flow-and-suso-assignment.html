@@ -135,8 +135,8 @@ Initialization<a class="anchor" aria-label="anchor" href="#stage-1-spatial-bound
 <td align="left"><strong>Map Canvas</strong></td>
 <td align="left">
 <code><a href="https://rdrr.io/pkg/googleway/man/google_map.html" class="external-link">googleway::google_map()</a></code> or
-<code><a href="https://rdrr.io/pkg/leaflet/man/leaflet.html" class="external-link">leaflet::leaflet()</a></code> +
-<code><a href="https://rdrr.io/pkg/vantorr/man/add_vantor_basemap.html" class="external-link">vantorr::add_vantor_basemap()</a></code>
+<code><a href="https://rstudio.github.io/leaflet/reference/leaflet.html" class="external-link">leaflet::leaflet()</a></code> +
+<code><a href="https://michael-cw.github.io/vantorr/reference/add_vantor_basemap.html" class="external-link">vantorr::add_vantor_basemap()</a></code>
 </td>
 <td align="left">Google API key or Vantor WMTS/WMS API key</td>
 <td align="left">Interactive satellite map zoomed to
@@ -206,8 +206,8 @@ producing <code>EPSG:326xx</code> (Northern Hemisphere) or
 balance and minimum distance constraints (<code>mindis</code> in meters)
 are computed on planar metric coordinates.</li>
 <li>
-<strong>Sample Selection (<code><a href="https://rdrr.io/pkg/spsurvey/man/grts.html" class="external-link">spsurvey::grts()</a></code> /
-<code><a href="https://rdrr.io/pkg/spsurvey/man/irs.html" class="external-link">spsurvey::irs()</a></code>)</strong>: For each stratum
+<strong>Sample Selection (<code><a href="https://usepa.github.io/spsurvey/reference/grts.html" class="external-link">spsurvey::grts()</a></code> /
+<code><a href="https://usepa.github.io/spsurvey/reference/irs.html" class="external-link">spsurvey::irs()</a></code>)</strong>: For each stratum
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>h</mi><annotation encoding="application/x-tex">h</annotation></semantics></math>
 (cluster), the target sample size is capped at the cluster’s building
 count
@@ -252,11 +252,11 @@ cover-page variable mapping, and supervisor team assignment tables.
 Structure</strong>:
 <ul>
 <li>
-<code><a href="https://rdrr.io/pkg/SurveySolutionsAPIv2/man/suso_set_key.html" class="external-link">SurveySolutionsAPIv2::suso_set_key()</a></code> and
-<code><a href="https://rdrr.io/pkg/SurveySolutionsAPIv2/man/suso_PwCheck.html" class="external-link">SurveySolutionsAPIv2::suso_PwCheck()</a></code> validate the server
+<code><a href="https://michael-cw.github.io/SurveySolutionsAPIv2/reference/suso_set_key.html" class="external-link">SurveySolutionsAPIv2::suso_set_key()</a></code> and
+<code><a href="https://michael-cw.github.io/SurveySolutionsAPIv2/reference/suso_PwCheck.html" class="external-link">SurveySolutionsAPIv2::suso_PwCheck()</a></code> validate the server
 URL, workspace, API user, and password.</li>
 <li>
-<code><a href="https://rdrr.io/pkg/SurveySolutionsAPIv2/man/suso_getQuestDetails.html" class="external-link">SurveySolutionsAPIv2::suso_getQuestDetails()</a></code> retrieves
+<code><a href="https://michael-cw.github.io/SurveySolutionsAPIv2/reference/suso_getQuestDetails.html" class="external-link">SurveySolutionsAPIv2::suso_getQuestDetails()</a></code> retrieves
 the list of imported questionnaires. Selecting a questionnaire fetches
 its JSON structure (<code>operation.type = "structure"</code>) and
 extracts all cover-page identifying variables
@@ -292,11 +292,11 @@ bound to <code>GPSVAR()</code>.</li>
 <li>The administrator selects one or more sampled buildings (or
 clusters) in the left table (<code>assignTable</code>), selects a field
 supervisor in the right table (<code>teamTable</code>, populated via
-<code><a href="https://rdrr.io/pkg/SurveySolutionsAPIv2/man/suso_getSV.html" class="external-link">SurveySolutionsAPIv2::suso_getSV()</a></code>), and clicks
+<code><a href="https://michael-cw.github.io/SurveySolutionsAPIv2/reference/suso_getSV.html" class="external-link">SurveySolutionsAPIv2::suso_getSV()</a></code>), and clicks
 <strong>Create Assignments</strong>.</li>
 <li>
 <code>susolisting</code> iterates over the selected units and calls
-<code><a href="https://rdrr.io/pkg/SurveySolutionsAPIv2/man/suso_createASS.html" class="external-link">SurveySolutionsAPIv2::suso_createASS()</a></code> for each sampled
+<code><a href="https://michael-cw.github.io/SurveySolutionsAPIv2/reference/suso_createASS.html" class="external-link">SurveySolutionsAPIv2::suso_createASS()</a></code> for each sampled
 building, assigning it to <code>ResponsibleName</code> with preloaded ID
 and GPS coordinates.</li>
 <li>The <strong>Assignment Overview</strong> table in the left sidebar
