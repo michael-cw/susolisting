@@ -13,18 +13,6 @@
 main_server <- function(input, output, session) {
   provider <- resolve_map_provider()
 
-  get_app_download_dir <- function() {
-    appdir <- file.path(tools::R_user_dir("susolisting", which = "data"), "download")
-    if (!dir.exists(appdir)) {
-      dir.create(appdir, recursive = TRUE, showWarnings = FALSE)
-    }
-    if (!dir.exists(appdir) || file.access(appdir, 2) != 0) {
-      appdir <- file.path(tempdir(), "susolisting", "download")
-      dir.create(appdir, recursive = TRUE, showWarnings = FALSE)
-    }
-    appdir
-  }
-
   # Disable INDIVIDUAL download when admuser/admpass options are set
   shiny::observe({
     if (!is.null(getOption("admuser")) && !is.null(getOption("admpass"))) {

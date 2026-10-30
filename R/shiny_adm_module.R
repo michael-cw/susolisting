@@ -179,7 +179,7 @@ modal_adminspsample_server <- function(id, side = shiny::reactive(NULL)) {
     # Scan user directories to build frame file list
     framefiles <- shiny::reactiveVal(NULL)
     shiny::observeEvent(input$generateFrame, {
-      appdir <- file.path(tools::R_user_dir("susolisting", which = "data"), "download")
+      appdir <- get_app_download_dir()
       ndirs <- list.dirs(appdir, recursive = FALSE, full.names = TRUE)
       if (length(ndirs) == 0) {
         shiny::showNotification("No Listing data available!", type = "error", id = "nolisting")

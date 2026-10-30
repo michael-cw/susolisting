@@ -21,7 +21,8 @@
 #'   `"vantor"` / `"maxar"` (uses `leaflet` and `vantorr` with Vantor/Maxar API
 #'   credentials).
 #'
-#' @return The return value of [shiny::runApp()].
+#' @return No return value, called for side effects (launches the interactive
+#'   'Shiny' application).
 #'
 #' @examples
 #' if (interactive()) {
@@ -52,18 +53,18 @@ runListingApp <- function(launch.browser = TRUE,
   provider <- resolve_map_provider(provider)
   shiny::addResourcePath("www", system.file("www", package = "susolisting"))
 
-  original_options <- list(
-    shiny.maxRequestSize = getOption("shiny.maxRequestSize"),
-    spinner.color.background = getOption("spinner.color.background"),
-    admuser = getOption("admuser"),
-    admpass = getOption("admpass"),
-    susolisting.provider = getOption("susolisting.provider")
+  old_opts <- options(
+    shiny.maxRequestSize = 5000 * 1024^2,
+    spinner.color.background = "#0d47a1",
+    admuser = admuser,
+    admpass = admpass,
+    susolisting.provider = provider
   )
-
-  options(susolisting.provider = provider)
+  on.exit(options(old_opts), add = TRUE)
 
   changeoptions <- function() {
     options(
+      shiny.maxRequestSize = 5000 * 1024^2,
       spinner.color.background = "#0d47a1",
       admuser = admuser,
       admpass = admpass,
@@ -72,9 +73,7 @@ runListingApp <- function(launch.browser = TRUE,
     shiny::shinyOptions(shiny.maxRequestSize = 5000 * 1024^2)
 
     shiny::onStop(function() {
-      if (!is.null(original_options)) {
-        options(original_options)
-      }
+      options(old_opts)
     })
   }
 

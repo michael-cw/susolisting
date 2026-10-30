@@ -27,7 +27,8 @@ function to call with the application's URL.}
 credentials).}
 }
 \value{
-The return value of \code{\link[shiny:runApp]{shiny::runApp()}}.
+No return value, called for side effects (launches the interactive
+'Shiny' application).
 }
 \description{
 A wrapper function to start the interactive Shiny application.

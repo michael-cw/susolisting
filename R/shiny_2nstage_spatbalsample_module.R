@@ -214,6 +214,19 @@ modal_spsample2stage_server <- function(id,
       strata_n <- pmin(as.integer(ss), as.integer(cluster_counts))
       names(strata_n) <- names(cluster_counts)
 
+      has_seed <- exists(".Random.seed", envir = globalenv(), inherits = FALSE)
+      if (has_seed) {
+        old_seed <- get(".Random.seed", envir = globalenv(), inherits = FALSE)
+        on.exit(assign(".Random.seed", old_seed, envir = globalenv()), add = TRUE)
+      } else {
+        on.exit(
+          if (exists(".Random.seed", envir = globalenv(), inherits = FALSE)) {
+            rm(".Random.seed", envir = globalenv())
+          },
+          add = TRUE
+        )
+      }
+
       if (input$samplemode == "Balanced") {
         set.seed(input$sampSEED)
         samp <- spsurvey::grts(

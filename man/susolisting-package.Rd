@@ -4,14 +4,15 @@
 \name{susolisting-package}
 \alias{susolisting}
 \alias{susolisting-package}
-\title{susolisting: Shiny Application for EA Listing on Satellite Imagery}
+\title{susolisting: 'Shiny' Application for Enumeration Area Listing on Satellite Imagery}
 \description{
-A Shiny application to mark buildings on a Google or Vantor (Maxar) satellite map within user-provided enumeration area (EA) boundaries. The application requires the input of boundaries in ESRI shapefile format, and returns a CSV file with all the listed buildings, supports second-stage spatially balanced sampling via 'spsurvey', and integrates with 'Survey Solutions' for team assignment creation.
+Interactive 'Shiny' application to mark buildings on 'Google Maps' or 'Vantor' ('Maxar') satellite imagery within user-provided enumeration area (EA) boundaries. Reads boundary polygons in 'ESRI' shapefile format, exports listed building coordinates as a CSV file, supports second-stage spatially balanced sampling via 'spsurvey', and integrates with 'Survey Solutions' (\url{https://mysurvey.solutions/}) via 'SurveySolutionsAPIv2' for automated survey assignment creation.
 }
 \seealso{
 Useful links:
 \itemize{
   \item \url{https://github.com/michael-cw/susolisting}
+  \item \url{https://michael-cw.github.io/susolisting/}
   \item Report bugs at \url{https://github.com/michael-cw/susolisting/issues}
 }
 

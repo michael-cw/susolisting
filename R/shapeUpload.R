@@ -60,3 +60,32 @@ sanitize_string <- function(input_string, repl_for_whitespace = "_") {
 
   return(sanitized_string)
 }
+
+#' Resolve the application storage directory for enumerator listing files
+#'
+#' @description Returns the directory where enumerator listing `.fst` files are
+#' stored. In interactive sessions, uses [tools::R_user_dir()]. In
+#' non-interactive sessions (such as automated tests and `R CMD check`), falls
+#' back to [tempdir()] so the user's home filespace is never modified.
+#'
+#' @return Character string specifying the path to the storage directory.
+#' @noRd
+#' @keywords internal
+get_app_download_dir <- function() {
+  appdir <- getOption("susolisting.storage_dir")
+  if (is.null(appdir) || !nzchar(appdir)) {
+    if (interactive()) {
+      appdir <- file.path(tools::R_user_dir("susolisting", which = "data"), "download")
+    } else {
+      appdir <- file.path(tempdir(), "susolisting", "download")
+    }
+  }
+  if (!dir.exists(appdir)) {
+    dir.create(appdir, recursive = TRUE, showWarnings = FALSE)
+  }
+  if (!dir.exists(appdir) || file.access(appdir, 2) != 0) {
+    appdir <- file.path(tempdir(), "susolisting", "download")
+    dir.create(appdir, recursive = TRUE, showWarnings = FALSE)
+  }
+  appdir
+}

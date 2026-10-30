@@ -1,18 +1,21 @@
 Package: susolisting
-Title: Shiny Application for EA Listing on Satellite Imagery
+Title: 'Shiny' Application for Enumeration Area Listing on Satellite Imagery
 Version: 0.2.0
 Authors@R: 
     person("Michael", "Wild", , "mwild@worldbank.org", role = c("aut", "cre"))
-Description: A Shiny application to mark buildings on a Google or Vantor
-    (Maxar) satellite map within user-provided enumeration area (EA)
-    boundaries. The application requires the input of boundaries in ESRI
-    shapefile format, and returns a CSV file with all the listed buildings,
-    supports second-stage spatially balanced sampling via 'spsurvey', and
-    integrates with 'Survey Solutions' for team assignment creation.
+Description: Interactive 'Shiny' application to mark buildings on 'Google Maps'
+    or 'Vantor' ('Maxar') satellite imagery within user-provided enumeration
+    area (EA) boundaries. Reads boundary polygons in 'ESRI' shapefile format,
+    exports listed building coordinates as a CSV file, supports second-stage
+    spatially balanced sampling via 'spsurvey', and integrates with
+    'Survey Solutions' (<https://mysurvey.solutions/>) via
+    'SurveySolutionsAPIv2' for automated survey assignment creation.
 License: MIT + file LICENSE
 URL: https://github.com/michael-cw/susolisting,
     https://michael-cw.github.io/susolisting/
 BugReports: https://github.com/michael-cw/susolisting/issues
+Depends: 
+    R (>= 4.1.0)
 Imports: 
     data.table,
     dplyr,

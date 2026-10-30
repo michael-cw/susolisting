@@ -24,27 +24,28 @@ test_that("main_ui builds without startup warnings for both google and vantor pr
   expect_match(ui_vantor_html, "detailSampMap")
 })
 
-test_that("runListingAppServer returns a valid shiny.appobj for google, vantor, and maxar", {
+test_that("runListingAppServer returns a valid shiny.appobj without mutating global options", {
   old_opt <- getOption("susolisting.provider")
   on.exit(options(susolisting.provider = old_opt), add = TRUE)
+  options(susolisting.provider = "initial_sentinel")
 
   expect_no_warning({
     app_g <- runListingAppServer(admuser = "admin", admpass = "secret", provider = "google")
   })
   expect_s3_class(app_g, "shiny.appobj")
-  expect_equal(getOption("susolisting.provider"), "google")
+  expect_equal(getOption("susolisting.provider"), "initial_sentinel")
 
   expect_no_warning({
     app_v <- runListingAppServer(admuser = "admin", admpass = "secret", provider = "vantor")
   })
   expect_s3_class(app_v, "shiny.appobj")
-  expect_equal(getOption("susolisting.provider"), "vantor")
+  expect_equal(getOption("susolisting.provider"), "initial_sentinel")
 
   expect_no_warning({
     app_m <- runListingAppServer(admuser = "admin", admpass = "secret", provider = "maxar")
   })
   expect_s3_class(app_m, "shiny.appobj")
-  expect_equal(getOption("susolisting.provider"), "vantor")
+  expect_equal(getOption("susolisting.provider"), "initial_sentinel")
 })
 
 test_that("UI modules construct valid Shiny tag objects", {
