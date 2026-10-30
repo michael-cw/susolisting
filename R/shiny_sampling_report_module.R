@@ -448,20 +448,169 @@ build_sampling_report_docx <- function(frame_data,
     font.family = "Arial"
   )
 
-  add_wbg_table <- function(doc_obj, df_val) {
-    officer::body_add_table(
-      doc_obj,
-      value = df_val,
-      style = "Table Professional",
-      header = TRUE,
-      align_table = "center",
-      first_row = TRUE,
-      first_column = FALSE,
-      last_row = FALSE,
-      last_column = FALSE,
-      no_hband = FALSE,
-      no_vband = TRUE
+  xml_escape <- function(x) {
+    x <- as.character(x)
+    x[is.na(x)] <- ""
+    x <- gsub("&", "&amp;", x, fixed = TRUE)
+    x <- gsub("<", "&lt;", x, fixed = TRUE)
+    x <- gsub(">", "&gt;", x, fixed = TRUE)
+    x <- gsub("\"", "&quot;", x, fixed = TRUE)
+    x <- gsub("'", "&apos;", x, fixed = TRUE)
+    x
+  }
+
+  add_wbg_table <- function(doc_obj, df_val, col_widths = NULL, col_align = NULL) {
+    nc <- ncol(df_val)
+    nr <- nrow(df_val)
+    total_dxa <- 9648L # 6.7 inches in dxa (8.5in page width minus 2 * 0.9in margins)
+    if (is.null(col_widths)) {
+      hdr_nchar <- nchar(colnames(df_val))
+      body_nchar <- vapply(
+        df_val,
+        function(col) max(c(1L, nchar(as.character(col))), na.rm = TRUE),
+        integer(1)
+      )
+      weights <- pmin(45L, pmax(10L, pmax(hdr_nchar, body_nchar)))
+      col_dxa <- as.integer(round(total_dxa * (weights / sum(weights))))
+      col_dxa[nc] <- total_dxa - sum(col_dxa[-nc])
+    } else {
+      col_dxa <- as.integer(round(total_dxa * (col_widths / sum(col_widths))))
+      col_dxa[nc] <- total_dxa - sum(col_dxa[-nc])
+    }
+
+    if (is.null(col_align)) {
+      col_align <- ifelse(vapply(df_val, is.numeric, logical(1)), "right", "left")
+      if (nc == 2L) {
+        col_align <- c("left", "right")
+      } else if (nc > 2L) {
+        col_align <- c("left", rep("right", nc - 1L))
+      }
+    }
+
+    grid_cols <- paste(sprintf("<w:gridCol w:w=\"%d\"/>", col_dxa), collapse = "")
+
+    hdr_cells <- character(nc)
+    col_names <- xml_escape(colnames(df_val))
+    for (j in seq_len(nc)) {
+      hdr_cells[j] <- sprintf(
+        paste0(
+          "<w:tc>",
+          "<w:tcPr>",
+          "<w:tcW w:w=\"%d\" w:type=\"dxa\"/>",
+          "<w:tcBorders>",
+          "<w:top w:val=\"single\" w:sz=\"12\" w:space=\"0\" w:color=\"002244\"/>",
+          "<w:bottom w:val=\"single\" w:sz=\"12\" w:space=\"0\" w:color=\"009FDA\"/>",
+          "<w:left w:val=\"none\"/>",
+          "<w:right w:val=\"none\"/>",
+          "</w:tcBorders>",
+          "<w:shd w:val=\"clear\" w:color=\"auto\" w:fill=\"002244\"/>",
+          "<w:vAlign w:val=\"center\"/>",
+          "</w:tcPr>",
+          "<w:p>",
+          "<w:pPr>",
+          "<w:spacing w:before=\"60\" w:after=\"60\" w:line=\"240\" w:lineRule=\"auto\"/>",
+          "<w:jc w:val=\"%s\"/>",
+          "</w:pPr>",
+          "<w:r>",
+          "<w:rPr>",
+          "<w:rFonts w:ascii=\"Arial\" w:hAnsi=\"Arial\" w:cs=\"Arial\"/>",
+          "<w:b/>",
+          "<w:bCs/>",
+          "<w:color w:val=\"FFFFFF\"/>",
+          "<w:sz w:val=\"19\"/>",
+          "<w:szCs w:val=\"19\"/>",
+          "</w:rPr>",
+          "<w:t xml:space=\"preserve\">%s</w:t>",
+          "</w:r>",
+          "</w:p>",
+          "</w:tc>"
+        ),
+        col_dxa[j],
+        col_align[j],
+        col_names[j]
+      )
+    }
+    hdr_row <- paste0(
+      "<w:tr><w:trPr><w:cantSplit/><w:tblHeader/></w:trPr>",
+      paste(hdr_cells, collapse = ""),
+      "</w:tr>"
     )
+
+    body_rows <- character(nr)
+    for (i in seq_len(nr)) {
+      bg_fill <- if (i %% 2L == 0L) "F2F7FB" else "FFFFFF"
+      btm_color <- if (i == nr) "002244" else "D9E2EC"
+      btm_sz <- if (i == nr) "12" else "4"
+      row_cells <- character(nc)
+      for (j in seq_len(nc)) {
+        val_str <- xml_escape(df_val[[j]][i])
+        row_cells[j] <- sprintf(
+          paste0(
+            "<w:tc>",
+            "<w:tcPr>",
+            "<w:tcW w:w=\"%d\" w:type=\"dxa\"/>",
+            "<w:tcBorders>",
+            "<w:top w:val=\"none\"/>",
+            "<w:bottom w:val=\"single\" w:sz=\"%s\" w:space=\"0\" w:color=\"%s\"/>",
+            "<w:left w:val=\"none\"/>",
+            "<w:right w:val=\"none\"/>",
+            "</w:tcBorders>",
+            "<w:shd w:val=\"clear\" w:color=\"auto\" w:fill=\"%s\"/>",
+            "<w:vAlign w:val=\"center\"/>",
+            "</w:tcPr>",
+            "<w:p>",
+            "<w:pPr>",
+            "<w:spacing w:before=\"40\" w:after=\"40\" w:line=\"240\" w:lineRule=\"auto\"/>",
+            "<w:jc w:val=\"%s\"/>",
+            "</w:pPr>",
+            "<w:r>",
+            "<w:rPr>",
+            "<w:rFonts w:ascii=\"Arial\" w:hAnsi=\"Arial\" w:cs=\"Arial\"/>",
+            "<w:color w:val=\"333333\"/>",
+            "<w:sz w:val=\"19\"/>",
+            "<w:szCs w:val=\"19\"/>",
+            "</w:rPr>",
+            "<w:t xml:space=\"preserve\">%s</w:t>",
+            "</w:r>",
+            "</w:p>",
+            "</w:tc>"
+          ),
+          col_dxa[j],
+          btm_sz,
+          btm_color,
+          bg_fill,
+          col_align[j],
+          val_str
+        )
+      }
+      body_rows[i] <- paste0(
+        "<w:tr><w:trPr><w:cantSplit/></w:trPr>",
+        paste(row_cells, collapse = ""),
+        "</w:tr>"
+      )
+    }
+
+    tbl_xml <- paste0(
+      "<w:tbl xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\">",
+      "<w:tblPr>",
+      "<w:tblW w:w=\"", total_dxa, "\" w:type=\"dxa\"/>",
+      "<w:jc w:val=\"center\"/>",
+      "<w:tblLayout w:type=\"fixed\"/>",
+      "<w:tblCellMar>",
+      "<w:top w:w=\"80\" w:type=\"dxa\"/>",
+      "<w:left w:w=\"120\" w:type=\"dxa\"/>",
+      "<w:bottom w:w=\"80\" w:type=\"dxa\"/>",
+      "<w:right w:w=\"120\" w:type=\"dxa\"/>",
+      "</w:tblCellMar>",
+      "<w:tblLook w:val=\"04A0\" w:firstRow=\"1\" w:lastRow=\"0\" w:firstColumn=\"0\" w:lastColumn=\"0\" w:noHBand=\"0\" w:noVBand=\"1\"/>",
+      "</w:tblPr>",
+      "<w:tblGrid>", grid_cols, "</w:tblGrid>",
+      hdr_row,
+      paste(body_rows, collapse = ""),
+      "</w:tbl>"
+    )
+
+    officer::body_add_xml(doc_obj, str = tbl_xml)
   }
 
   # ============================================================================

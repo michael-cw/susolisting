@@ -181,6 +181,7 @@ modal_adminspsample_server <- function(id, side = shiny::reactive(NULL)) {
     shiny::observeEvent(input$generateFrame, {
       appdir <- get_app_download_dir()
       ndirs <- list.dirs(appdir, recursive = FALSE, full.names = TRUE)
+      ndirs <- ndirs[!grepl("^(unit_tester|vantor_tester)_", basename(ndirs))]
       if (length(ndirs) == 0) {
         shiny::showNotification("No Listing data available!", type = "error", id = "nolisting")
       } else {
