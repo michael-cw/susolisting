@@ -432,9 +432,9 @@ main_server <- function(input, output, session) {
   ##############################################################################
   output$detailSampMap <- googleway::renderGoogle_map({
     map_key <- shiny::req(mapkey())
-    lga.sel <- shiny::isolate(lgaSel())
+    lga.sel <- lgaSel()
     shiny::req(lga.sel)
-    tmp.points_sf <- shiny::isolate(lgaPoint())
+    tmp.points_sf <- lgaPoint()
 
     map <- googleway::google_map(
       key = map_key,
@@ -501,7 +501,7 @@ main_server <- function(input, output, session) {
         googleway::add_markers(data = tmp.points_sf, layer_id = "house")
     }
     upd %>% add_marker_drawing()
-  }, ignoreInit = FALSE)
+  }, ignoreInit = TRUE)
 
   ##############################################################################
   ## CLEAR AREA

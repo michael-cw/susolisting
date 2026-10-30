@@ -96,9 +96,11 @@ clear_marker_drawing <- function(map) {
 #' JavaScript tags for custom Google Maps marker drawing control
 #'
 #' @description
-#' Returns the `shiny::tags$head` script implementing `add_suso_drawing` and
+#' Returns the `shiny::tags$script` implementing `add_suso_drawing` and
 #' `clear_suso_drawing` in the browser to replace the deprecated and removed
-#' `google.maps.drawing.DrawingManager` API.
+#' `google.maps.drawing.DrawingManager` API, and patches `googleway`'s
+#' `clear_object` and `polygon_click` helpers for null-safety and non-blocking
+#' boundary polygons.
 #'
 #' @return A `shiny.tag` object containing the script definition.
 #' @noRd
@@ -106,6 +108,28 @@ clear_marker_drawing <- function(map) {
 suso_drawing_js <- function() {
   shiny::tags$script(shiny::HTML("
       (function() {
+        // Patch googleway's clear_object to prevent TypeError when clearing empty/uninitialized layers
+        window.clear_object = function(map_id, objType, layer_id) {
+          var arr = window[map_id + objType + layer_id];
+          if (Array.isArray(arr)) {
+            for (var i = 0; i < arr.length; i++) {
+              if (arr[i]) {
+                if (window.google && google.maps && google.maps.event) {
+                  google.maps.event.clearInstanceListeners(arr[i]);
+                }
+                if (typeof arr[i].setMap === 'function') {
+                  arr[i].setMap(null);
+                }
+                arr[i] = null;
+              }
+            }
+            window[map_id + objType + layer_id] = null;
+            if (typeof window.clear_legend === 'function') {
+              window.clear_legend(map_id, layer_id);
+            }
+          }
+        };
+
         function syncBoundsPolygonsNonClickable(map_id) {
           var polys = window[map_id + 'googlePolygonbounds'];
           if (Array.isArray(polys)) {
@@ -123,6 +147,32 @@ suso_drawing_js <- function() {
           window.setTimeout(function() { syncBoundsPolygonsNonClickable(map_id); }, 250);
           window.setTimeout(function() { syncBoundsPolygonsNonClickable(map_id); }, 600);
         }
+
+        function installGooglewayHooks() {
+          if (typeof window.polygon_click === 'function' && !window.__susoPolygonClickWrapped) {
+            var origPolygonClick = window.polygon_click;
+            window.polygon_click = function(m_id, polygonObject, polygon_id, polygonInfo) {
+              if (polygonObject && typeof polygonObject.setOptions === 'function') {
+                polygonObject.setOptions({ clickable: false });
+              }
+              return origPolygonClick.apply(this, arguments);
+            };
+            window.__susoPolygonClickWrapped = true;
+          }
+
+          if (typeof window.add_polygons === 'function' && !window.__susoAddPolygonsWrapped) {
+            var origAddPolygons = window.add_polygons;
+            window.add_polygons = function(m_id) {
+              if (!window[m_id + 'map']) return;
+              var res = origAddPolygons.apply(this, arguments);
+              schedulePolygonSync(m_id);
+              return res;
+            };
+            window.__susoAddPolygonsWrapped = true;
+          }
+        }
+
+        installGooglewayHooks();
 
         function placeSusoMarker(map_id, latLng) {
           var map = window[map_id + 'map'];
@@ -151,6 +201,7 @@ suso_drawing_js <- function() {
         }
 
         window.add_suso_drawing = function(map_id) {
+          installGooglewayHooks();
           var map = window[map_id + 'map'];
           if (!map) return;
 
@@ -163,17 +214,6 @@ suso_drawing_js <- function() {
 
           schedulePolygonSync(map_id);
 
-          // Wrap add_polygons once so future polygon updates also stay non-clickable
-          if (typeof window.add_polygons === 'function' && !window.__susoAddPolygonsWrapped) {
-            var origAddPolygons = window.add_polygons;
-            window.add_polygons = function(m_id) {
-              var res = origAddPolygons.apply(this, arguments);
-              schedulePolygonSync(m_id);
-              return res;
-            };
-            window.__susoAddPolygonsWrapped = true;
-          }
-
           if (map.__susoDrawingInitialized) {
             map.setOptions({
               draggableCursor: window[map_id + 'drawingMode'] === 'marker' ? 'crosshair' : null
@@ -181,6 +221,7 @@ suso_drawing_js <- function() {
             return;
           }
           map.__susoDrawingInitialized = true;
+          window[map_id + 'googleDrawingOverlays'] = [];
 
           // Build TOP_RIGHT drawing mode control (Pan / Add Marker)
           var controlDiv = document.createElement('div');

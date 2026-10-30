@@ -140,3 +140,58 @@ test_that("modal_adminspsample_server verifies admin credentials", {
     }
   )
 })
+
+test_that("main_server renders detailSampMap after startup, shapefile upload, and area_id selection", {
+  tmp_dir <- file.path(tempdir(), "test_main_server_flow")
+  on.exit(unlink(tmp_dir, recursive = TRUE), add = TRUE)
+  dir.create(tmp_dir, recursive = TRUE, showWarnings = FALSE)
+
+  poly1 <- sf::st_polygon(list(rbind(
+    c(10.0, 50.0), c(10.1, 50.0), c(10.1, 50.1), c(10.0, 50.1), c(10.0, 50.0)
+  )))
+  poly2 <- sf::st_polygon(list(rbind(
+    c(10.2, 50.0), c(10.3, 50.0), c(10.3, 50.1), c(10.2, 50.1), c(10.2, 50.0)
+  )))
+  sfc <- sf::st_sfc(poly1, poly2, crs = 4326)
+  shp_in <- sf::st_sf(ea_code = c("EA_01", "EA_02"), geometry = sfc)
+  shp_path <- file.path(tmp_dir, "bounds.shp")
+  sf::st_write(shp_in, shp_path, quiet = TRUE)
+
+  shp_files <- list.files(tmp_dir, full.names = TRUE)
+  zip_path <- file.path(tempdir(), "test_bounds_flow.zip")
+  on.exit(unlink(zip_path), add = TRUE)
+  zip::zip(zipfile = zip_path, files = shp_files, mode = "cherry-pick")
+
+  shiny::testServer(main_server, {
+    # 1. Startup login (before file upload)
+    session$setInputs(mapkey = "fake_google_key", user = "unit_tester", startup = TRUE)
+    expect_error(output$detailSampMap, class = "shiny.silent.error")
+
+    # 2. Upload boundary shapefile and select identification variable
+    session$setInputs(new_shape = list(datapath = zip_path, name = "test_bounds_flow.zip"))
+    session$setInputs(area_id = "ea_code")
+
+    # 3. Map must now render with polygons and custom marker drawing handler
+    map_json <- output$detailSampMap
+    expect_type(map_json, "character")
+    expect_match(map_json, "add_polygons")
+    expect_match(map_json, "add_suso_drawing")
+
+    # 4. Simulate placing a building marker on the map
+    session$setInputs(
+      detailSampMap_markercomplete = list(
+        position = list(lat = 50.05, lng = 10.05),
+        randomValue = 0.5
+      )
+    )
+    expect_equal(nrow(pointsCollectorGoogle()), 1L)
+    expect_equal(pointsCollectorGoogle()$area_id, "EA_01")
+
+    # 5. Click Next EA to persist marker and advance to EA_02
+    session$setInputs(loadNextEA = 1L)
+    expect_equal(counter(), 2L)
+    expect_equal(nrow(pointsCollectorGoogle()), 0L)
+    on.exit(unlink(fp(), recursive = TRUE), add = TRUE)
+  })
+})
+
