@@ -1,4 +1,3 @@
-
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
 <a href='https://docs.mysurvey.solutions/'><img src="man/img/susospatial.png" align="right" height="139"/></a>
@@ -38,12 +37,14 @@ valuable tools for enumerating and extracting survey units.
 
 3.  **Sample Drawing**: For this stage, the application leverages the
     [‘spsurvey’](https://usepa.github.io/spsurvey/) package, which
-    facilitates the drawing of the sample.
+    facilitates the drawing of spatially balanced or random second-stage
+    samples.
 
 4.  **Assignment to Supervisors**: Once the sample is generated, you can
     assign it directly to the Survey Solutions supervisors. This
-    assignment is performed through a simple interface grounded on the
-    Survey Solutions REST API.
+    assignment is performed through a streamlined interface grounded on
+    [‘SurveySolutionsAPIv2’](https://github.com/michael-cw/SurveySolutionsAPIv2)
+    (REST and GraphQL APIs).
 
 #### Usage Overview
 
@@ -59,15 +60,14 @@ For detailed information on how to get started, please consult our
 ## Prerequisites
 
 This application requires a Google Maps API key. Get yours
-[here](https://mapsplatform.google.com/)
+[here](https://mapsplatform.google.com/).
 
 ## Installation
 
 1.  Install R: <https://cran.r-project.org/mirrors.html> (version 4.1.1
     or greater)
 
-2.  Install R Studio: <https://rstudio.com/products/rstudio/download/>
-    (version 1.2.5001-3 or newer)
+2.  Install RStudio: <https://posit.co/download/rstudio-desktop/>
 
 3.  Make sure the *devtools* package is installed, if not install it
     with:
@@ -76,9 +76,11 @@ This application requires a Google Maps API key. Get yours
 install.packages("devtools")
 ```
 
-4.  After that install the actual package:
+4.  Ensure `SurveySolutionsAPIv2` is installed, then install
+    `susolisting`:
 
 ``` r
+devtools::install_github("michael-cw/SurveySolutionsAPIv2")
 devtools::install_github("michael-cw/susolisting")
 ```
 
@@ -86,11 +88,11 @@ devtools::install_github("michael-cw/susolisting")
 
 There are two options to run the application. The first one is in
 *local* mode, without *admuser* and *admpass* credentials provided. In
-this mode, the user needs to download her work, with the *enabled*
-download Button. The work is still stored, until the download button is
-clicked. Once the file is created, the directory will be flushed, \*\*so
-make sure, you have finished all the enumeration areas/segments and the
-downloaded file is safely stored.
+this mode, the user needs to download their work with the *enabled*
+download button. The work is stored locally until the download button is
+clicked. Once the archive is created, the directory will be flushed,
+**so make sure you have finished all the enumeration areas/segments and
+the downloaded file is safely stored.**
 
 ``` r
 library(susolisting)
@@ -99,11 +101,11 @@ susolisting::runListingApp()
 
 The second option allows you to run the application in *team* mode. This
 mode allows you to work with several *desk enumerators* either on the
-same device or everyone on their own devices, and copying the file then
-to the administrator device. The administrator can then compile a single
+same device or everyone on their own devices, and copying the files to
+the administrator device. The administrator can then compile a single
 sampling frame based on all the enumerated areas, sample from it, and
 finally directly assign the sampled units to the survey teams on the
-survey solution server. There is also a mapping module included, which
+Survey Solutions server. There is also a mapping module included, which
 allows you to map the frame variables to the Survey Solutions
 questionnaire Identification variables used on the [Cover
 Page](https://docs.mysurvey.solutions/questionnaire-designer/components/special-section-cover/).
@@ -117,12 +119,12 @@ susolisting::runListingApp(admuser = "you", admpass = "your_password")
 
 ## Running the application on a Shiny Server
 
-The package also contains a shiny server function (open source or pro),
-which you can run, i.e. in an Ubuntu Virtual Machine on your PC. The
-same two modes are available. To run it on a shiny server, you need to
-create a server location (= directory), i.e. *susolisting* and then put
-an *app.R* script into this directory. If you run in *local* mode, the
-script contains the following two lines:
+The package also contains a Shiny Server function (open source or pro),
+which you can run, e.g., on an Ubuntu server or Virtual Machine. The
+same two modes are available. To run it on a Shiny Server, create a
+server directory (e.g., *susolisting*) and place an *app.R* script into
+this directory. If you run in *local* mode, the script contains the
+following two lines:
 
 ``` r
 library(susolisting)
@@ -136,29 +138,12 @@ library(susolisting)
 susolisting::runListingAppServer(admuser = "you", admpass = "your_password")
 ```
 
-#### Attention - Potential issue with ‘shinyalert’
-
-There’s a known issue with the ‘shinyalert’ package from Dean Attali,
-which may cause the application to fail during start-up on certain
-Windows installations running the latest version of R. For more details,
-please check this
-[issue](https://github.com/daattali/shinyalert/issues/75).
-
-This issue has been resolved in the development version of ‘shinyalert’,
-but the fix is not yet available in the official CRAN release. If you
-encounter this problem, please install the development version for
-‘shinyalert’ using the following command:
-
-``` r
-devtools::install_github("daattali/shinyalert")
-```
-
 ## Feature requests and bug reports
 
 You can either use the standard GitHub approach by filing a bug
 report/feature request
-[here](https://github.com/michael-cw/SurveySolutionsAPI/issues) or you
-use the Survey Solutions user forum
+[here](https://github.com/michael-cw/susolisting/issues) or use the
+Survey Solutions user forum
 [here](https://forum.mysurvey.solutions/c/api/13).
 
 Please continue to check for updates, as we are constantly working to

@@ -1,313 +1,334 @@
-#' shiny module for  UI for admin
+#' Shiny module main-panel UI for admin sampling
 #'
+#' @param id Character string specifying the module namespace ID.
 #'
+#' @return A `shiny.tag.list` object containing the main-panel admin UI.
 #' @noRd
 #' @keywords internal
-#'
-
-# main module UI with sampling module
-modal_adminspsample_ui_tabmain<-function(id) {
-  ns<-NS(id)
-  tagList(
-    # modal for second stage sample, with in app data
+modal_adminspsample_ui_tabmain <- function(id) {
+  ns <- shiny::NS(id)
+  shiny::tagList(
     modal_spsample2stage_ui(ns("sample"), inputMode = "app")
   )
 }
 
-# sidebar module UI with frame generation, frame overview table, and sample overview table
-modal_adminspsample_ui_tabside<-function(id, label = "Generate Frame",
-                                         style = "color: #FFFFFF; background-color: #1976D2;border-color: #0d47a1") {
-  ns<-NS(id)
-  tagList(
-    fluidRow(
-      ## 1. Action button to start the dwl
+#' Shiny module sidebar UI for admin frame generation and summary tables
+#'
+#' @param id Character string specifying the module namespace ID.
+#' @param label Character string for the frame generation button label.
+#' @param style CSS style string for the action button.
+#'
+#' @return A `shiny.tag.list` object containing the sidebar admin UI.
+#' @noRd
+#' @keywords internal
+modal_adminspsample_ui_tabside <- function(id,
+                                           label = "Generate Frame",
+                                           style = "color: #FFFFFF; background-color: #1976D2;border-color: #0d47a1") {
+  ns <- shiny::NS(id)
+  shiny::tagList(
+    shiny::fluidRow(
       shinyjs::disabled(
-        column(1),
-        column(10,
-        actionButton(ns("generateFrame"),
-                     label = label,
-                     icon("download"),
-                     width = "15vw",
-                     style=style)
+        shiny::column(1),
+        shiny::column(
+          10,
+          shiny::actionButton(
+            ns("generateFrame"),
+            label = label,
+            shiny::icon("download"),
+            width = "15vw",
+            style = style
+          )
         ),
-        column(1)
+        shiny::column(1)
       )
-    ),br(),
-    fluidRow(
-      column(2),
-      column(8,
-             shinyjs::hidden(
-               div(id = ns("headframe"),
-                   h4("Frame Summary",
-                      style = "color: #0d47a1;text-align: center;")
-               )
-             )
-      ),
-      column(2)
     ),
-    fluidRow(
-      column(1),
-      column(10,
-             DT::dataTableOutput(ns("framesummary"),
-                                 width = "15vw")
-             ),
-      column(1)
-    ),br(),
-    fluidRow(
-      column(2),
-      column(8,
-             shinyjs::hidden(
-               div(id = ns("headsample"),
-                   h4("Sample Summary",
-                      style = "color: #0d47a1;text-align: center;")
-               )
-             )
+    shiny::br(),
+    shiny::fluidRow(
+      shiny::column(2),
+      shiny::column(
+        8,
+        shinyjs::hidden(
+          shiny::div(
+            id = ns("headframe"),
+            shiny::h4(
+              "Frame Summary",
+              style = "color: #0d47a1;text-align: center;"
+            )
+          )
+        )
       ),
-      column(2)
+      shiny::column(2)
     ),
-    fluidRow(
-      column(1),
-      column(10,
-             DT::dataTableOutput(ns("samplesummary"),
-                                 width = "15vw")
+    shiny::fluidRow(
+      shiny::column(1),
+      shiny::column(
+        10,
+        DT::DTOutput(ns("framesummary"), width = "15vw")
       ),
-      column(1)
+      shiny::column(1)
+    ),
+    shiny::br(),
+    shiny::fluidRow(
+      shiny::column(2),
+      shiny::column(
+        8,
+        shinyjs::hidden(
+          shiny::div(
+            id = ns("headsample"),
+            shiny::h4(
+              "Sample Summary",
+              style = "color: #0d47a1;text-align: center;"
+            )
+          )
+        )
+      ),
+      shiny::column(2)
+    ),
+    shiny::fluidRow(
+      shiny::column(1),
+      shiny::column(
+        10,
+        DT::DTOutput(ns("samplesummary"), width = "15vw")
+      ),
+      shiny::column(1)
     )
   )
 }
 
+#' Shiny module server for admin authentication, frame compilation, and 2nd-stage sampling
 #'
+#' @param id Character string specifying the module namespace ID.
+#' @param side Reactive expression returning the currently active sidebar tab.
+#'
+#' @return A list with two reactive elements: `admcheckok` (logical status of
+#'   admin verification) and `sampleData` (a `data.table` of the 2nd-stage sample).
 #' @noRd
 #' @keywords internal
-#'
+modal_adminspsample_server <- function(id, side = shiny::reactive(NULL)) {
+  shiny::moduleServer(id, function(input, output, session) {
+    admcheckResult <- shiny::reactiveVal(FALSE)
 
-# server
-modal_adminspsample_server <- function(id,
-                                       side = reactive(NULL)) {
-  moduleServer(
-    id,
-    function(input, output, session) {
-
-      # permission check
-      # get credentials for admin
-      observeEvent(side(),{
-        ns<-NS(id)
-        # show TAB when sidebar sample or suso tab is selected and admin check has not been performed
-        if(!(admcheckResult()) & (side() =="Sample"| side()=="SuSo")){
-          shinyalert::shinyalert(
-            inputId = "admincheck",
-            title = paste("Sample Generation & Assignment creation"),
-            text = tagList(
-              shiny::h4("Please make sure you have read the relevant documentation, avialable under: https://datanalytics.worldbank.org/SpatialSamplingManual/
-          To continue please provide your credentials. In this section you will be able, to compile the frame from all collaborators, and
-                  create the 2nd stage sample, which can either be downloaded or directly uploaded to you Survey Solutions Server."),
-              shiny::textInput(
-                inputId = ns("admuser"),
-                label = "",
-                placeholder = "Admin User Name"
-              ),br(),
-              shiny::passwordInput(
-                inputId = ns("admpass"),
-                label = "",
-                placeholder = "Admin Password"
-              )
+    # Prompt for admin credentials when Sample or SuSo tab is selected
+    shiny::observeEvent(side(), {
+      ns <- session$ns
+      if (!admcheckResult() && (identical(side(), "Sample") || identical(side(), "SuSo"))) {
+        shinyalert::shinyalert(
+          inputId = "admincheck",
+          title = "Sample Generation & Assignment creation",
+          text = shiny::tagList(
+            shiny::h4(
+              "Please make sure you have read the relevant documentation, available under: https://datanalytics.worldbank.org/SpatialSamplingManual/
+               To continue please provide your credentials. In this section you will be able to compile the frame from all collaborators, and
+               create the 2nd stage sample, which can either be downloaded or directly uploaded to your Survey Solutions Server."
             ),
-            closeOnEsc = TRUE,
-            closeOnClickOutside = FALSE,
-            html = TRUE,
-            type = "success",
-            showConfirmButton = TRUE,
-            showCancelButton = TRUE,
-            confirmButtonText = "OK",
-            confirmButtonCol = "#AEDEF4",
-            timer = 0,
-            imageUrl = "www/logoWBDG.png",
-            animation = TRUE)
-        } else if (admcheckResult()) {
-          # do not check when already exists
-          admcheckResult(TRUE)
-          shinyjs::enable("generateFrame")
+            shiny::textInput(
+              inputId = ns("admuser"),
+              label = "",
+              placeholder = "Admin User Name"
+            ),
+            shiny::br(),
+            shiny::passwordInput(
+              inputId = ns("admpass"),
+              label = "",
+              placeholder = "Admin Password"
+            )
+          ),
+          closeOnEsc = TRUE,
+          closeOnClickOutside = FALSE,
+          html = TRUE,
+          type = "success",
+          showConfirmButton = TRUE,
+          showCancelButton = TRUE,
+          confirmButtonText = "OK",
+          confirmButtonCol = "#AEDEF4",
+          timer = 0,
+          imageUrl = "www/logoWBDG.png",
+          animation = TRUE
+        )
+      } else if (admcheckResult()) {
+        admcheckResult(TRUE)
+        shinyjs::enable("generateFrame")
+      } else {
+        admcheckResult(FALSE)
+        shinyjs::disable("generateFrame")
+      }
+    }, ignoreInit = TRUE)
 
+    # Verify admin credentials
+    shiny::observeEvent(input$admincheck, {
+      if (is.null(getOption("admuser")) || is.null(getOption("admpass"))) {
+        shiny::showNotification(
+          "No admin credentials have been provided at start-up! Please set admin credentials first, to use the sampling and assignment module.",
+          type = "error",
+          id = "noadm"
+        )
+        shiny::req(FALSE)
+      } else {
+        shiny::req(input$admuser, input$admpass)
+        if (input$admuser == getOption("admuser") && input$admpass == getOption("admpass")) {
+          admcheckResult(TRUE)
+          shiny::showNotification("Success!", type = "message", id = "admsuccess")
+          shinyjs::enable("generateFrame")
         } else {
-          # hide TAB when sidebar sample tab is not selected
           admcheckResult(FALSE)
           shinyjs::disable("generateFrame")
         }
-      }, ignoreInit = T)
+      }
+    })
 
-      # check credentials for admin
-      admcheckResult<-reactiveVal(FALSE)
-      observeEvent(input$admincheck, {
-        # show tab when credentials match
-        if(is.null(getOption("admuser")) || is.null(getOption("admpass"))) {
-          showNotification("No admin credentials have been provided at start-up! Please set admin
-                           credentials first, to use the sampling and assignment module.", type = "error", id = "noadm")
-          req(FALSE)
+    # Scan user directories to build frame file list
+    framefiles <- shiny::reactiveVal(NULL)
+    shiny::observeEvent(input$generateFrame, {
+      appdir <- file.path(tools::R_user_dir("susolisting", which = "data"), "download")
+      ndirs <- list.dirs(appdir, recursive = FALSE, full.names = TRUE)
+      if (length(ndirs) == 0) {
+        shiny::showNotification("No Listing data available!", type = "error", id = "nolisting")
+      } else {
+        allfiles <- list()
+        for (di in ndirs) {
+          dilist <- data.table::data.table(
+            listfiles = list.files(di, pattern = "\\.fst$", full.names = TRUE)
+          )
+          if (nrow(dilist) == 0) next
+          allfiles[[basename(di)]] <- dilist
+        }
+        allfiles <- data.table::rbindlist(allfiles, idcol = "dir")
+        shiny::req(nrow(allfiles) > 0)
 
-        } else {
-          req(input$admuser, input$admpass)
+        framefiles(allfiles)
+        shinyalert::shinyalert(
+          inputId = "framecreatconfirm",
+          title = "Generate the sampling frame",
+          text = shiny::tagList(
+            shiny::h4(shiny::HTML(sprintf(
+              'This will create the 2nd stage sampling frame for further processing. There are currently
+               <p style="color:red; font-weight: bold;">%d user directories and %d files </p> to process.
+               Do you want to continue?',
+              length(ndirs), nrow(allfiles)
+            )))
+          ),
+          closeOnEsc = TRUE,
+          closeOnClickOutside = FALSE,
+          html = TRUE,
+          type = "warning",
+          showConfirmButton = TRUE,
+          showCancelButton = TRUE,
+          confirmButtonText = "Generate the frame",
+          confirmButtonCol = "#AEDEF4",
+          timer = 0,
+          imageUrl = "www/logoWBDG.png",
+          animation = TRUE
+        )
+      }
+    })
 
-          if(input$admuser==getOption("admuser") && input$admpass == getOption("admpass")) {
-            admcheckResult(TRUE)
-            showNotification("Success!", type = "message", id = "admsuccess")
-            shinyjs::enable("generateFrame")
-          } else {
-            admcheckResult(FALSE)
-            shinyjs::disable("generateFrame")
+    # Compile frame from .fst files
+    dt_frame <- shiny::reactiveVal(NULL)
+    shiny::observeEvent(input$framecreatconfirm, {
+      ac <- admcheckResult()
+      if (isTRUE(ac) && isTRUE(input$framecreatconfirm)) {
+        fnall <- shiny::req(framefiles())
+        points_dt <- list()
+        for (i in seq_len(nrow(fnall))) {
+          fn <- fnall$listfiles[i]
+          if (file.exists(fn)) {
+            eaname <- basename(tools::file_path_sans_ext(fn))
+            points_dt[[eaname]] <- fst::read_fst(fn, as.data.table = TRUE)
           }
         }
+        points_dt <- data.table::rbindlist(points_dt, idcol = "ea")
+        data.table::setorderv(points_dt, c("ea", "long", "lat"))
+        dt_frame(points_dt)
+      }
+    })
 
-      })
-
-      # generate the frame
-      framefiles<-reactiveVal(NULL)
-      observeEvent(input$generateFrame, {
-        # get app dir
-        appdir<-file.path(tools::R_user_dir("susolisting", which = "data"), "download")
-        # list all user directories
-        ndirs<-list.dirs(appdir, recursive = F, full.names = T)
-        if(length(ndirs)==0){
-         # if dir is empty notify
-          showNotification("No Listing data available!", type = "error", id = "nolisting")
-        } else if (length(ndirs)>0) {
-          allfiles<-list()
-          for(di in ndirs) {
-            # get dir info
-            dilist<-data.table::data.table(listfiles=list.files(di, pattern = ".fst$", full.names = T))
-            # skip if no files
-            if(nrow(dilist)==0) next()
-            # export for processing
-            allfiles[[basename(di)]]<-dilist
-
-          }
-          allfiles<-data.table::rbindlist(allfiles, idcol = "dir")
-          req(nrow(allfiles)>0)
-          # get ea code: if code unique-->no change, if not, username
-
-          framefiles(allfiles)
-          shinyalert::shinyalert(
-            inputId = "framecreatconfirm",
-            title = paste("Generate the sampling frame"),
-            text = tagList(
-              shiny::h4(HTML(sprintf('This will create the 2nd stage sampling frame for further processing. There are currently
-              <p style="color:red; font-weight: bold;">%d user directories and %d files </p> to process.
-                        Do you want to continue?', length(ndirs), nrow(allfiles))))
-            ),
-            closeOnEsc = TRUE,
-            closeOnClickOutside = FALSE,
-            html = TRUE,
-            type = "warning",
-            showConfirmButton = TRUE,
-            showCancelButton = TRUE,
-            confirmButtonText = "Generate the frame",
-            confirmButtonCol = "#AEDEF4",
-            timer = 0,
-            imageUrl = "www/logoWBDG.png",
-            animation = TRUE)
-
-
-        }
-      })
-      # compile the frame
-      dt_frame<-reactiveVal(NULL)
-      observeEvent(input$framecreatconfirm, {
-        ac<-admcheckResult()
-        if(ac & input$framecreatconfirm) {
-          fnall<-req(framefiles())
-          #fn<-file.path(fp(),paste0("area_", fn,".fst"))
-          points_dt<-list()
-          for(i in 1:nrow(fnall)){
-            fn<-fnall$listfiles[i]
-            if(file.exists(fn)) {
-              #eaname<-paste0(fnall$dir[i], basename(tools::file_path_sans_ext(fnall$listfiles[i])))
-              eaname<-basename(tools::file_path_sans_ext(fnall$listfiles[i]))
-              points_dt[[eaname]]<-fst::read_fst(fn, as.data.table = T)
-
-            } else {
-              next()
-            }
-          }
-
-          # bind dts generate EA from list name
-          points_dt<-data.table::rbindlist(points_dt, idcol = "ea")
-          data.table::setorderv(points_dt, c("ea", "long", "lat"))
-          # return
-          dt_frame(points_dt)
-        }
-      })
-
-      # overview table for the frame
-      output$framesummary<-DT::renderDT({
-        dtframe<-req(dt_frame())
-        # summary: N ea, N total, Mean EA, Min EA, Max EA
-        dtframegr<-dtframe[,.(ean=.N), by=.(ea)]
-        tab<-data.table::data.table(
-          var=c("Number of Segments", "Total Frame Population", "Average population per Segment",
-                "Minimum Population per Segment", "Maximum Population per Segment"),
-          val=round(c(dplyr::n_distinct(dtframe$ea), nrow(dtframe), mean(dtframegr$ean), min(dtframegr$ean), max(dtframegr$ean)))
-        )
-
-        tab<-DT::datatable(tab,
-                           list(dom="t"),
-                           selection = "none",
-                           rownames = F,
-                           colnames = c("", ""),
-                           style = "bootstrap")
-        # enable header
-        shinyjs::show("headframe")
-        return(tab)
-
-      })
-
-      # Returns SF!!!!!
-      sampleDataSF<-modal_spsample2stage_server("sample", inputMode = "app",
-                                  framepoints_sf = dt_frame,
-                                  patternlat = "lat", patternlong = "long")
-
-      # transform sf to points
-      sampleData<-eventReactive(sampleDataSF(), {
-        tabsf<-req(sampleDataSF())
-        tab<-as.data.frame(tabsf %>% sf::st_set_geometry(NULL))
-        tab<-data.table::as.data.table(tab)
-        return(tab)
-      })
-
-      # create sample summary table
-      output$samplesummary<-DT::renderDT({
-        dtframe<-req(sampleData())
-        # summary: N ea, N total, Mean EA, Min EA, Max EA
-        tab<-data.table::data.table(
-          var=c("Number of Segments", "Total Sample Population", "Average Sampling Weight",
-                "Minimum Sampling Weight", "Maximum Sampling Weight", "Sampling Weight CV"),
-          val=round(c((dplyr::n_distinct(dtframe$ea)),
-                      nrow(dtframe),
-                      mean(dtframe$wgt),
-                      min(dtframe$wgt),
-                      max(dtframe$wgt),
-                      stats::sd(dtframe$wgt)/mean(dtframe$wgt)), 3)
-        )
-
-        tab<-DT::datatable(tab,
-                           list(dom="t"),
-                           selection = "none",
-                           rownames = F,
-                           colnames = c("", ""),
-                           style = "bootstrap")
-        # enable header
-        shinyjs::show("headsample")
-        return(tab)
-
-      })
-
-      # RETURN LIST
-      return(
-        list(
-          admcheckok=admcheckResult,
-          sampleData = sampleData
-        )
+    # Frame summary table
+    output$framesummary <- DT::renderDT({
+      dtframe <- shiny::req(dt_frame())
+      dtframegr <- dtframe[, .(ean = .N), by = .(ea)]
+      tab <- data.table::data.table(
+        var = c(
+          "Number of Segments",
+          "Total Frame Population",
+          "Average population per Segment",
+          "Minimum Population per Segment",
+          "Maximum Population per Segment"
+        ),
+        val = round(c(
+          dplyr::n_distinct(dtframe$ea),
+          nrow(dtframe),
+          mean(dtframegr$ean),
+          min(dtframegr$ean),
+          max(dtframegr$ean)
+        ))
       )
 
+      tab <- DT::datatable(
+        tab,
+        list(dom = "t"),
+        selection = "none",
+        rownames = FALSE,
+        colnames = c("", ""),
+        style = "bootstrap"
+      )
+      shinyjs::show("headframe")
+      return(tab)
+    })
 
+    # Invoke 2nd-stage sampling module (returns sf object)
+    sampleDataSF <- modal_spsample2stage_server(
+      "sample",
+      inputMode = "app",
+      framepoints_sf = dt_frame,
+      patternlat = "lat",
+      patternlong = "long"
+    )
 
-    }
-  )}
+    sampleData <- shiny::eventReactive(sampleDataSF(), {
+      tabsf <- shiny::req(sampleDataSF())
+      tab <- as.data.frame(sf::st_set_geometry(tabsf, NULL))
+      data.table::as.data.table(tab)
+    })
+
+    # Sample summary table
+    output$samplesummary <- DT::renderDT({
+      dtframe <- shiny::req(sampleData())
+      tab <- data.table::data.table(
+        var = c(
+          "Number of Segments",
+          "Total Sample Population",
+          "Average Sampling Weight",
+          "Minimum Sampling Weight",
+          "Maximum Sampling Weight",
+          "Sampling Weight CV"
+        ),
+        val = round(c(
+          dplyr::n_distinct(dtframe$ea),
+          nrow(dtframe),
+          mean(dtframe$wgt),
+          min(dtframe$wgt),
+          max(dtframe$wgt),
+          stats::sd(dtframe$wgt) / mean(dtframe$wgt)
+        ), 3)
+      )
+
+      tab <- DT::datatable(
+        tab,
+        list(dom = "t"),
+        selection = "none",
+        rownames = FALSE,
+        colnames = c("", ""),
+        style = "bootstrap"
+      )
+      shinyjs::show("headsample")
+      return(tab)
+    })
+
+    return(
+      list(
+        admcheckok = admcheckResult,
+        sampleData = sampleData
+      )
+    )
+  })
+}

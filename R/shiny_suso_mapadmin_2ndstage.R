@@ -1,590 +1,701 @@
 #' Shiny UI module for Survey Solutions Assignment Admin
 #'
+#' @description Provides the main panel UI for connecting to a Survey Solutions
+#' server, mapping sample variables to questionnaire ID variables, and assigning
+#' sampled building units to supervisor teams.
 #'
-#' @description Requires a points dataframe as input, as well as Survey
-#' Solutions credentials.Retrieves id variables and allows mapping them to
-#' dataframe variables, to subsequently create assignment file at the TEAM
-#' level.
+#' @param id Character string specifying the module namespace ID.
 #'
-#' @param id,input,output,session Internal parameters for {shiny}.
-#'
+#' @return A `shiny.tag.list` object containing the main-panel UI elements.
 #' @noRd
-#'
+#' @keywords internal
 #' @importFrom shiny NS tagList
-
-
-
-mapadminUI_st2<-function(id) {
-  ns <- NS(id)
-  tagList(
-    shinyWidgets::useShinydashboard(),
+mapadminUI_st2 <- function(id) {
+  ns <- shiny::NS(id)
+  shiny::tagList(
     shinyjs::useShinyjs(),
-    shinyalert::useShinyalert(),
-    waiter::use_waiter(),
-    fluidRow(
-      shinydashboard::box(width = 6, status = "success", height = "35vh",
-                          solidHeader = T, background = NULL,
-                          ##    SuSo API
-                          title = "Survey Solutions API Settings",
-                          div(id = ns("susosettings"),
-                              fluidRow(
-                                column(6,
-                                       textInput(ns("susoServer"), "Survey Solutions Server",
-                                                 placeholder = "Provide Server")
-                                ),
-                                column(6,
-                                       textInput(ns("susoWS"), "Workspace",
-                                                 placeholder = "Provide User" )
-                                )),
-                              fluidRow(
-                                column(6,
-                                       textInput(ns("susoUser"), "API user",
-                                                 placeholder = "Provide User" )
-                                ),
-                                column(6,
-                                       passwordInput(ns("susoPass"), "API password",
-                                                     placeholder = "Provide Pass")
-                                )
-                              ),
-                              fluidRow(
-                                column(2),
-                                column(8,
-                                       actionButton(ns("checkSuso"), "Check Server Settings",
-                                                    icon("check"),
-                                                    width = "100%",
-                                                    style="color: #fff;
-                                                              background-color: #337ab7;
-                                                              border-color: #337ab7;
-                                                                margin: 0 0% 0 0%;")
-                                ),
-                                column(2)
-                              )
-                          ), br(),
-                          div(id = "serversetreset",
-                              fluidRow(
-                                column(1),
-                                column(10,
-                                       DT::dataTableOutput(ns("apiSummary"), height = "10vh")
-                                ),
-                                column(1)
-                              ),br(),
-                              fluidRow(
-                                column(2),
-                                column(8,
-                                       shinyjs::hidden(
-                                         actionButton(ns("resetSuso"), "Reset Server Settings",
-                                                      icon("ban"),
-                                                      width = "100%",
-                                                      style="color: #FFFFFF;background-color: #7f0000;border-color: #7f0000")
-                                       )
-                                ),
-                                column(2)
-                              )
-                          )
+    waiter::useWaiter(),
+    shiny::fluidRow(
+      shinydashboard::box(
+        width = 6,
+        status = "success",
+        height = "35vh",
+        solidHeader = TRUE,
+        background = NULL,
+        title = "Survey Solutions API Settings",
+        shiny::div(
+          id = ns("susosettings"),
+          shiny::fluidRow(
+            shiny::column(
+              6,
+              shiny::textInput(
+                ns("susoServer"),
+                "Survey Solutions Server",
+                placeholder = "Provide Server"
+              )
+            ),
+            shiny::column(
+              6,
+              shiny::textInput(
+                ns("susoWS"),
+                "Workspace",
+                placeholder = "Provide Workspace"
+              )
+            )
+          ),
+          shiny::fluidRow(
+            shiny::column(
+              6,
+              shiny::textInput(
+                ns("susoUser"),
+                "API user",
+                placeholder = "Provide User"
+              )
+            ),
+            shiny::column(
+              6,
+              shiny::passwordInput(
+                ns("susoPass"),
+                "API password",
+                placeholder = "Provide Pass"
+              )
+            )
+          ),
+          shiny::fluidRow(
+            shiny::column(2),
+            shiny::column(
+              8,
+              shiny::actionButton(
+                ns("checkSuso"),
+                "Check Server Settings",
+                shiny::icon("check"),
+                width = "100%",
+                style = "color: #fff; background-color: #337ab7; border-color: #337ab7; margin: 0;"
+              )
+            ),
+            shiny::column(2)
+          )
+        ),
+        shiny::br(),
+        shiny::div(
+          id = "serversetreset",
+          shiny::fluidRow(
+            shiny::column(1),
+            shiny::column(
+              10,
+              DT::DTOutput(ns("apiSummary"), height = "10vh")
+            ),
+            shiny::column(1)
+          ),
+          shiny::br(),
+          shiny::fluidRow(
+            shiny::column(2),
+            shiny::column(
+              8,
+              shinyjs::hidden(
+                shiny::actionButton(
+                  ns("resetSuso"),
+                  "Reset Server Settings",
+                  shiny::icon("ban"),
+                  width = "100%",
+                  style = "color: #FFFFFF; background-color: #7f0000; border-color: #7f0000"
+                )
+              )
+            ),
+            shiny::column(2)
+          )
+        )
       ),
-      shinydashboard::box(width = 6, status = "success",height = "35vh",
-                          solidHeader = T, background = NULL,
-                          ##    UPLOAD BOX
-                          title = "ID variable selection",
-                          h4("Select variables for preloading",
-                             align="center",
-                             style="font-weight:bold;color:#0d47a1; margin:0 0 0 0;"),
-
-                          helpText("All selected variables must be present in the dataset.",
-                                   style = "text-align: center;"),
-
-                          fluidRow(column(3),
-                                   column(6,
-                                          suso_map_idUI(ns("dtModule"))
-                                   ),
-                                   column(3)
-                          ),br(),
-                          h4("Survey Solutions Upload File Mapping",
-                             align="center",
-                             style="font-weight:bold;color:#0d47a1; margin:0 0 0 0;"),
-                          helpText("This is the mapping of the variables in the sample to the identifier variables in your questionnaire,
-                                   based on your selection.",
-                                   style = "text-align: center;"),
-                          fluidRow(column(2),
-                                   column(8,
-                                          suso_map_idUI_maptable(ns("dtModule"), height = "5vh")
-                                          ),
-                                   column(2)
-                          )
+      shinydashboard::box(
+        width = 6,
+        status = "success",
+        height = "35vh",
+        solidHeader = TRUE,
+        background = NULL,
+        title = "ID variable selection",
+        shiny::h4(
+          "Select variables for preloading",
+          align = "center",
+          style = "font-weight:bold; color:#0d47a1; margin:0;"
+        ),
+        shiny::helpText(
+          "All selected variables must be present in the dataset.",
+          style = "text-align: center;"
+        ),
+        shiny::fluidRow(
+          shiny::column(3),
+          shiny::column(
+            6,
+            suso_map_idUI(ns("dtModule"))
+          ),
+          shiny::column(3)
+        ),
+        shiny::br(),
+        shiny::h4(
+          "Survey Solutions Upload File Mapping",
+          align = "center",
+          style = "font-weight:bold; color:#0d47a1; margin:0;"
+        ),
+        shiny::helpText(
+          "This is the mapping of the variables in the sample to the identifier variables in your questionnaire, based on your selection.",
+          style = "text-align: center;"
+        ),
+        shiny::fluidRow(
+          shiny::column(2),
+          shiny::column(
+            8,
+            suso_map_idUI_maptable(ns("dtModule"), height = "5vh")
+          ),
+          shiny::column(2)
+        )
       )
     ),
-    fluidRow(
-      shinydashboard::box(width = 12, status = "success",
-                          solidHeader = T, background = NULL, collapsible = T, collapsed = T,
-                          ##    Maps on server
-                          title = "Team Assignment",
-                          fluidRow(
-                            column(4),
-                            column(4),
-                            column(4)
-                          ),
-                          fluidRow(
-                            column(6,
-                                   DT::dataTableOutput(ns("assignTable"),  height = "28vh")
-                            ),
-                            column(4,
-                                   DT::dataTableOutput(ns("teamTable"),  height = "28vh")
-                            ),
-                            column(2,
-                                   actionButton(ns("suso_assignPoints"), "Create Assignments", width = "100%",
-                                                icon("upload"),
-                                                style="color: #FFFFFF;
-                                                     background-color: #1976D2;
-                                                     border-color: #1976D2")
-                            )
-                          )
+    shiny::fluidRow(
+      shinydashboard::box(
+        width = 12,
+        status = "success",
+        solidHeader = TRUE,
+        background = NULL,
+        collapsible = TRUE,
+        collapsed = TRUE,
+        title = "Team Assignment",
+        shiny::fluidRow(
+          shiny::column(4),
+          shiny::column(4),
+          shiny::column(4)
+        ),
+        shiny::fluidRow(
+          shiny::column(
+            6,
+            DT::DTOutput(ns("assignTable"), height = "28vh")
+          ),
+          shiny::column(
+            4,
+            DT::DTOutput(ns("teamTable"), height = "28vh")
+          ),
+          shiny::column(
+            2,
+            shiny::actionButton(
+              ns("suso_assignPoints"),
+              "Create Assignments",
+              width = "100%",
+              shiny::icon("upload"),
+              style = "color: #FFFFFF; background-color: #1976D2; border-color: #1976D2"
+            )
+          )
+        )
       )
     )
   )
-  ####################FIN UI####################################################
 }
 
-#' Shiny UI module for Survey Solutions Map Admin
+#' Shiny sidebar UI module for Survey Solutions Map Admin
 #'
+#' @description Sidebar UI for displaying available questionnaires and the
+#' assignment overview log.
 #'
-#' @description ui for assignment creation log, placed in different tab
+#' @param id Character string specifying the module namespace ID.
 #'
-#' @param id,input,output,session Internal parameters for {shiny}.
-#'
+#' @return A `shiny.tag.list` object containing the sidebar UI elements.
 #' @noRd
-#'
+#' @keywords internal
 #' @importFrom shiny NS tagList
-#'
-
-mapadminUI2_st2<-function(id) {
-  ns <- NS(id)
-  tagList(
-    fluidRow(
-      column(2),
-      column(8,
-             shinyjs::hidden(
-               div(id = ns("headquest"),
-                   h4("Available Questionnaire",
-                      style = "color: #0d47a1;text-align: center !important;")
-               )
-             )
+mapadminUI2_st2 <- function(id) {
+  ns <- shiny::NS(id)
+  shiny::tagList(
+    shiny::fluidRow(
+      shiny::column(2),
+      shiny::column(
+        8,
+        shinyjs::hidden(
+          shiny::div(
+            id = ns("headquest"),
+            shiny::h4(
+              "Available Questionnaire",
+              style = "color: #0d47a1; text-align: center !important;"
+            )
+          )
+        )
       ),
-      column(2)
+      shiny::column(2)
     ),
-    fluidRow(
-      column(1),
-      column(10,
-             DT::dataTableOutput(ns("qTableIn"), width = "10vw")
+    shiny::fluidRow(
+      shiny::column(1),
+      shiny::column(
+        10,
+        DT::DTOutput(ns("qTableIn"), width = "10vw")
       ),
-      column(1)
-    ), br(),
-    fluidRow(
-      column(2),
-      column(8,
-             shinyjs::hidden(
-               div(id = ns("headass"),
-                   h4("Assignment Overview",
-                      style = "color: #0d47a1;text-align: center !important;")
-               )
-             )
-      ),
-      column(2)
+      shiny::column(1)
     ),
-    fluidRow(
-      column(1),
-      column(10,
-             DT::dataTableOutput(ns("assignoverviewTable"), width = "23vw")
+    shiny::br(),
+    shiny::fluidRow(
+      shiny::column(2),
+      shiny::column(
+        8,
+        shinyjs::hidden(
+          shiny::div(
+            id = ns("headass"),
+            shiny::h4(
+              "Assignment Overview",
+              style = "color: #0d47a1; text-align: center !important;"
+            )
+          )
+        )
       ),
-      column(1)
+      shiny::column(2)
+    ),
+    shiny::fluidRow(
+      shiny::column(1),
+      shiny::column(
+        10,
+        DT::DTOutput(ns("assignoverviewTable"), width = "23vw")
+      ),
+      shiny::column(1)
     )
   )
 }
-
-
 
 #' Shiny server module for Survey Solutions Map Admin
 #'
+#' @param id Character string specifying the module namespace ID.
+#' @param pointsfile Reactive expression returning the sampled points `data.table`.
 #'
+#' @return A list of reactives: `apiCheck`, `susoServer`, and `susoWS`.
 #' @importFrom shiny NS tagList
 #' @noRd
-#'
-mapadminSRV_st2 <- function(id, pointsfile=reactive({NULL})) {
-  moduleServer(
-    id,
-    function(input, output, session) {
+#' @keywords internal
+mapadminSRV_st2 <- function(id, pointsfile = shiny::reactive({ NULL })) {
+  shiny::moduleServer(id, function(input, output, session) {
+    smTab <- list(dom = "t")
 
-      # table specificaitons
-      ##  2. Info table (no selection, first column is Names)
-      smTab<-list(dom="t")
-
-      infoTable<-.%>% formatStyle(1,  color = '#FFFFFF',
-                                  backgroundColor = '#0d47a1',
-                                  fontWeight = 'bold')
-
-      inputTable<-.%>% formatStyle(2,
-                                   fontWeight = 'bold',
-                                   textAlign = 'center')
-
-
-      ##  3. View table (no selcetion, all columns the same)
-      viewTable<-.%>% formatStyle(1,  color = '#FFFFFF',
-                                  backgroundColor = '#33D2FF',
-                                  fontWeight = 'bold')
-
-      #########################################
-      ## CSS/UI Styles
-      styleDwlButton<-c("color: #FFFFFF;  width: 180px;background-color: #1976D2;
-                  border-color: #1976D2;
-                  margin:0 20% 0 20%;")
-      smTabDir<-list(dom="t", pagelength=500, scrollY="250px", scrollcollapse=TRUE, paging=FALSE)
-
-      action_btn_close <-c("color: #FFFFFF; background-color: #0d47a1; border-color: #0d47a1")
-      styleActButton<-c("color: #FFFFFF; background-color: #7f0000;
-                  border-color: #7f0000; margin:0 20% 0 20%;")
-
-      # API BASE Set-up
-      apiCheck<-reactiveVal(NULL); susoServer<-reactiveVal(NULL); susoWS<-reactiveVal(NULL)
-      # Check Credentials
-      observeEvent(input$checkSuso, {
-        # set credentials
-        SurveySolutionsAPI::suso_set_key(input$susoServer, input$susoUser, input$susoPass)
-        checkAPI<-SurveySolutionsAPI::suso_PwCheck(workspace = input$susoWS)
-        if(checkAPI$status_code==200) {
-          apiCheck(checkAPI$status_code)
-          susoServer(input$susoServer)
-          susoWS(input$susoWS)
-          # Disable Settings
-          shinyjs::disable("susosettings")
-          # Enable upload
-          # Show Reset
-          shinyjs::show("resetSuso")
-        } else {
-          shiny::showNotification(
-            "Survey Solutions Credentials not valid! Please correct.",
-            type = "warning"
-          )
-        }
-      }, ignoreInit = T)
-
-      # enable shape upload only when file is available
-      observe({
-        shiny::validate(need(apiCheck()==200, message = F))
-        req(pointsfile())
-        shinyjs::enable("suso_idvars")
-      })
-
-      # Reset API connection
-      observeEvent(input$resetSuso, {
-        shiny::validate(need(apiCheck()==200, message = F))
-        # Enable settings
-        shinyjs::enable("susosettings")
-        # Disable Upload
-        shinyjs::disable("suso_idvars")
-        # update inputs
-        updateTextInput(session = session, ("susoServer"), "Survey Solutions Server",
-                        placeholder = "Provide Server", value = "")
-        updateTextInput(session = session,("susoWS"), "Workspace",
-                        placeholder = "Provide User", value = "")
-        updateTextInput(session = session,("susoUser"), "API user",
-                        placeholder = "Provide User", value = "")
-        updateTextInput(session = session, ("susoPass"), "API password",
-                        placeholder = "Provide Pass", value = "")
-        # hide reset
-        shinyjs::hide("resetSuso")
-        # set api check to NULL
-        apiCheck(NULL)
-
-      }, ignoreInit = T)
-
-      # Table API Check Summary
-      output$apiSummary<-DT::renderDataTable({
-        shiny::validate(need(apiCheck()==200, message = F))
-        tab<-cbind(
-          c("API Credentials", "Server", "Workspace"),
-          c("Valid", susoServer(), susoWS())
-        )
-        DT::datatable(tab, smTab, selection = "none", rownames = F,
-                      colnames = c("",""),
-                      style = "bootstrap") %>% infoTable
-      })
-
-
-      # Table Questionnaire
-      qData<-reactive({
-        shiny::validate(need(apiCheck()==200, message = F))
-        tab<-SurveySolutionsAPI::suso_getQuestDetails(workspace = input$susoWS)
-
-        if(length(tab)==1 | is.null(tab)) {
-          showNotification("No questionnaire loaded on the provided server/workspace. Please import questionnaires first!", type = "error")
-          req(FALSE)
-        } else {
-          tab<-data.table::data.table(tab,
-                                      key = c("Title", "Version"))
-        }
-
-
-
-        tab[,c("date", "time"):=data.table::tstrsplit(LastEntryDate, "T", fixed=TRUE)][]
-        tab[,time:=as.ITime(time)]
-        tab[,date:=as.IDate(date)]
-        tab[,QuestionnaireIdVersion:=sprintf("%s_%d", QuestionnaireId, Version)]
-        setorderv(tab, c("date", "time"), -1)
-        return(tab)
-      })
-      qDataOut<-reactiveVal(NULL)
-      ###################################################################
-      ## Questionnaire for Incoming Variables
-      questIdIn<-reactiveVal(NULL); questFullListIn<-reactiveVal(NULL)
-      questIDselIn<-reactiveVal(NULL); questV_selIn<-reactiveVal(NULL)
-      output$qTableIn <- DT::renderDataTable({
-        req(qData())
-        tab<-qData()
-        questIdIn(tab[,.(QuestionnaireId, Version, Title)])
-        tab<-tab[,.(Title, Version, QuestionnaireId, LastEntryDate)]
-        ## Export
-        #questFullListIn(tab)
-        tab<-DT::datatable(tab[,.(Title, Version)], list(dom="tp"), selection = "single",  rownames = F,
-                           style = "bootstrap")
-        # enable header
-        shinyjs::show("headquest")
-        return(tab)
-      })
-      IDVARS<-reactiveVal(NULL); LOCVARS<-reactiveVal(NULL)
-      GPSVAR<-reactiveVal(NULL)
-      observeEvent(input$qTableIn_rows_selected, {
-        sel<-input$qTableIn_rows_selected
-        waiter::waiter_show(
-          color = "rgba(13, 71, 161, 0.7)",
-          html = tagList(
-            spin_fading_circles(),
-            "Loading Questionnaire ..."
-          )
-        )
-        iddata<-req(qData())
-        qid<-(iddata[sel, QuestionnaireId])
-        v<-(iddata[sel, Version])
-        # get the questions
-        qestStruct<-SurveySolutionsAPI::suso_getQuestDetails(workspace = input$susoWS,
-                                                             quid = qid,
-                                                             version = v,
-                                                             operation.type = "structure")
-        # take id vars
-        idvars<-qestStruct$q[Featured==T & type!="GpsCoordinateQuestion", .(VariableName, type)]
-        # take geo vars
-        gpsidvar<-qestStruct$q[Featured==T & type=="GpsCoordinateQuestion", VariableName]
-        shinyjs::enable("suso_idvars")
-        IDVARS(idvars)
-
-        # get local variables with type
-        locvars<-data.table(VariableName = names(pointsfile()), type=sapply(pointsfile(), class))
-        locvars<-locvars[!(VariableName %in% c("lon_WGS84", "lat_WGS84"))]
-        LOCVARS(locvars)
-
-        # get GPS var
-        GPSVAR(gpsidvar)
-
-        waiter::waiter_hide()
-        #
-      }, ignoreInit = T)
-
-
-      # API queries
-      # query teams
-      teamtablequery<-reactive({
-        shiny::validate(need(apiCheck()==200, message = F))
-        tab<-SurveySolutionsAPI::suso_getSV(workspace = input$susoWS)
-        return(tab)
-      })
-
-      # Map-to-User tables
-      # Map Table
-      output$assignTable<-DT::renderDataTable({
-        tab<-pointsfile()
-        req(tab)
-        if(!data.table::is.data.table(tab)) tab<-data.table(tab)
-        tab<-tab[,.(ea, area_id, siteID)] #, size, importDateUtc, wkid)]
-        datatable(tab, escape = F, rownames = F, selection = "multiple",
-                  options = list(pagelength=500,
-                                 scrollY="500px",
-                                 scrollX="300px",
-                                 scrollcollapse=TRUE,
-                                 paging=FALSE,
-                                 columnDefs = list(list(className = 'dt-center', targets = c(0:2),
-                                                        width = '20%', targets = c(0),
-                                                        width = '10%', targets = c(1),
-                                                        width = '5%', targets = c(2)
-                                 ))))
-      })
-
-      assingTabProxy<-dataTableProxy(
-        "assignTable",
-        session = shiny::getDefaultReactiveDomain(),
-        deferUntilFlush = TRUE
+    infoTable <- function(dt) {
+      DT::formatStyle(
+        dt,
+        1,
+        color = "#FFFFFF",
+        backgroundColor = "#0d47a1",
+        fontWeight = "bold"
       )
-
-      # Teams table
-      output$teamTable<-DT::renderDataTable({
-        tab<-teamtablequery()
-        req(tab)
-        shiny::validate(need(nrow(tab)>0, message = "No supervisor created!"))
-        tab<-tab[,.(UserName, IsLocked)]
-        datatable(tab, escape = F, rownames = F, selection = "single",
-                  options = list(pagelength=500,
-                                 scrollY="500px",
-                                 scrollcollapse=TRUE,
-                                 paging=FALSE,
-                                 columnDefs = list(list(className = 'dt-center', targets = c(0:1),
-                                                        width = '20%', targets = c(0),
-                                                        width = '10%', targets = c(1)
-                                 ))))
-      })
-
-      observeEvent(input$select_button,{
-        shinyalert::shinyalert(paste("Attention!"),
-                               paste0("Are you sure you want to reset the status of this Interview?\n", "ID:", input$select_button,
-                                      "\nIf yes, please re-type the ID to confirm."),
-                               type="input", inputId = "confirmReset", inputType = text,
-                               closeOnEsc=T, closeOnClickOutside=T, showCancelButton=T, showConfirmButton=T)
-      })
-
-      #   MAP ASSIGNMENT & LOG
-      toassingoverview<-reactiveVal(data.table(Team=character(0), AssignmentCount=character(0)))
-      observeEvent(input$suso_assignPoints,{
-        tabMAP<-pointsfile()
-        tabSV<-teamtablequery()
-        fullmap<-FULLMAP()
-        req(tabMAP, tabSV, fullmap)
-        shiny::validate(need(nrow(tabMAP)>0 & nrow(tabSV)>0, message = F))
-        mapsel<-(tabMAP[input$assignTable_rows_selected])
-        svsel<-(tabSV[input$teamTable_rows_selected])
-        # get existing log
-        mapsvselall<-toassingoverview()
-        # Correct possible side effect from data.table
-        if(nrow(mapsvselall)>0) mapsvselall[,Reset:=NULL]
-        # add new rows
-        mapsvsel<-data.table(Team=svsel$UserName, AssignmentCount=nrow(mapsel))
-        mapsvselall<-data.table::rbindlist(list(mapsvselall, mapsvsel))
-        # send to proxy for dt update
-        toassingoverview(data.table::copy(mapsvselall))
-        # Reset row selection in DT
-        DT::selectRows(assingTabProxy, selected = NULL)
-
-        # ASSIGNMENT CREATION
-
-        # subset to mapped variables
-        mapsel<-mapsel[,c(fullmap$locvars, "lat_WGS84", "lon_WGS84"), with=F]
-        AAout<-data.table(mapsel,
-                          ResponsibleName=svsel$UserName,
-                          Quantity=1,
-                          gpsstring=paste0(round(mapsel$lat_WGS84, 8), "$", round(mapsel$lon_WGS84, 8)))
-        gpsvar<-req(GPSVAR())
-        # rename
-        for(i in fullmap$locvars) {
-          idn<-fullmap[locvars==i, idvars]
-          data.table::setnames(AAout, i, idn)
-        }
-        data.table::setnames(AAout, "gpsstring", gpsvar); AAout[, c("lon_WGS84", "lat_WGS84"):=NULL]
-        ###############################################
-        if(nrow(AAout)>0) {
-          iddata<-req(qData())
-          sel<-input$qTableIn_rows_selected
-          qid<-(iddata[sel, QuestionnaireId])
-          v<-(iddata[sel, Version])
-          status_list<-list()
-          for(i in 1:nrow(AAout)) {
-            print(i)
-            AAsing<-AAout[i]
-            status_list[[i]]<-SurveySolutionsAPI::suso_createASS(df=AAsing,
-                                                                 QUID = qid,
-                                                                 version = v)
-          }
-        }
-      }, ignoreInit = T)
-
-      # Base table
-      output$assignoverviewTable<-DT::renderDataTable({
-        # create empty table for start and add lines through proxy
-        shiny::validate(need(apiCheck()==200, message = F))
-        # tab<-data.table(Team=character(0), Maps=character(0))
-        tab<-toassingoverview()
-        req(nrow(tab)>0)
-        # add reset button
-        ns<-NS(id)
-        tab[, Reset:=shinyInput(actionButton,
-                                nrow(tab),
-                                tab$Team,
-                                label = "Reset",
-                                style=styleActButton,
-                                onclick = paste0('Shiny.onInputChange(\"', session$ns("reset_button"), '\",  this.id)' ))]
-
-        tab<-datatable(tab, escape = F, rownames = F, selection = "single",
-                  options = list(pagelength=500,
-                                 scrollY="500px",
-                                 scrollcollapse=TRUE,
-                                 paging=FALSE,
-                                 columnDefs = list(list(className = 'dt-center', targets = c(0:2),
-                                                        width = '20%', targets = c(0),
-                                                        width = '10%', targets = c(1),
-                                                        width = '5%', targets = c(2)
-                                 ))))
-        # enable header
-        shinyjs::show("headass")
-        return(tab)
-      })
-
-      # Reset Map assignment
-      observeEvent(input$reset_button,{
-        ns<-NS(id)
-        shinyalert::shinyalert(
-          type = "error",
-          title = paste("Attention!"),
-          html = T,
-          text = tagList(
-            HTML(
-              paste0("Are you sure you want to reset the team assignment for\n", "ID:
-                      <br><center><font color='#0d47a1'><big>",
-                     input$reset_button,
-                     "</big></font></center><br>\nIf yes,
-                     please re-type the ID to confirm.")
-            ),
-            textInput(ns("confirmResetId"), "")
-          ),
-          inputId = "confirmReset",
-          inputType = text,
-          closeOnEsc=T,
-          closeOnClickOutside=T,
-          showCancelButton=T,
-          showConfirmButton=T,
-          animation = "slide-from-top"
-        )
-      })
-      observeEvent(session$ns(input$confirmReset), {
-        mapreset<-(input$confirmResetId)
-        # get existing log
-        mapsvselall<-toassingoverview()
-        # subset
-        mapsvselall<-mapsvselall[Team!=mapreset,]
-        toassingoverview(mapsvselall)
-      }, ignoreInit = T)
-
-      # Modal for Mapping -->MODULE
-      FULLMAP<-suso_map_idSRV("dtModule", varsLocal = LOCVARS, varsSuso = IDVARS)
-
-
-      ####################FIN SERVER####################################################
-      # return list
-      list(
-        apiCheck=apiCheck,
-        susoServer=susoServer,
-        susoWS=susoWS
-      )
-
     }
-  )
+
+    styleActButton <- "color: #FFFFFF; background-color: #7f0000; border-color: #7f0000; margin:0 20% 0 20%;"
+
+    apiCheck <- shiny::reactiveVal(NULL)
+    susoServer <- shiny::reactiveVal(NULL)
+    susoWS <- shiny::reactiveVal(NULL)
+
+    # Check Survey Solutions API Credentials
+    shiny::observeEvent(input$checkSuso, {
+      SurveySolutionsAPIv2::suso_set_key(
+        suso_server = input$susoServer,
+        suso_user = input$susoUser,
+        suso_password = input$susoPass,
+        workspace = input$susoWS
+      )
+      checkAPI <- SurveySolutionsAPIv2::suso_PwCheck(workspace = input$susoWS)
+      status_code <- if (is.list(checkAPI) && !is.null(checkAPI$status_code)) {
+        checkAPI$status_code
+      } else {
+        checkAPI
+      }
+
+      if (identical(as.integer(status_code), 200L)) {
+        apiCheck(200L)
+        susoServer(input$susoServer)
+        susoWS(input$susoWS)
+        shinyjs::disable("susosettings")
+        shinyjs::show("resetSuso")
+      } else {
+        shiny::showNotification(
+          "Survey Solutions Credentials not valid! Please correct.",
+          type = "warning"
+        )
+      }
+    }, ignoreInit = TRUE)
+
+    # Enable variable mapping button when API is valid and sample points are ready
+    shiny::observe({
+      shiny::validate(shiny::need(apiCheck() == 200, message = FALSE))
+      shiny::req(pointsfile())
+      shinyjs::enable("suso_idvars")
+    })
+
+    # Reset API connection
+    shiny::observeEvent(input$resetSuso, {
+      shiny::validate(shiny::need(apiCheck() == 200, message = FALSE))
+      shinyjs::enable("susosettings")
+      shinyjs::disable("suso_idvars")
+      shiny::updateTextInput(
+        session = session,
+        inputId = "susoServer",
+        label = "Survey Solutions Server",
+        placeholder = "Provide Server",
+        value = ""
+      )
+      shiny::updateTextInput(
+        session = session,
+        inputId = "susoWS",
+        label = "Workspace",
+        placeholder = "Provide Workspace",
+        value = ""
+      )
+      shiny::updateTextInput(
+        session = session,
+        inputId = "susoUser",
+        label = "API user",
+        placeholder = "Provide User",
+        value = ""
+      )
+      shiny::updateTextInput(
+        session = session,
+        inputId = "susoPass",
+        label = "API password",
+        placeholder = "Provide Pass",
+        value = ""
+      )
+      shinyjs::hide("resetSuso")
+      apiCheck(NULL)
+    }, ignoreInit = TRUE)
+
+    # Table API Check Summary
+    output$apiSummary <- DT::renderDT({
+      shiny::validate(shiny::need(apiCheck() == 200, message = FALSE))
+      tab <- cbind(
+        c("API Credentials", "Server", "Workspace"),
+        c("Valid", susoServer(), susoWS())
+      )
+      DT::datatable(
+        tab,
+        smTab,
+        selection = "none",
+        rownames = FALSE,
+        colnames = c("", ""),
+        style = "bootstrap"
+      ) %>% infoTable()
+    })
+
+    # Questionnaire list
+    qData <- shiny::reactive({
+      shiny::validate(shiny::need(apiCheck() == 200, message = FALSE))
+      tab <- SurveySolutionsAPIv2::suso_getQuestDetails(workspace = input$susoWS)
+
+      if (is.null(tab) || !is.data.frame(tab) || nrow(tab) == 0) {
+        shiny::showNotification(
+          "No questionnaire loaded on the provided server/workspace. Please import questionnaires first!",
+          type = "error"
+        )
+        shiny::req(FALSE)
+      }
+
+      tab <- data.table::as.data.table(tab)
+      data.table::setkeyv(tab, c("Title", "Version"))
+
+      if ("LastEntryDate" %in% names(tab) && is.character(tab$LastEntryDate)) {
+        tab[, c("date", "time") := data.table::tstrsplit(LastEntryDate, "T", fixed = TRUE)]
+        tab[, time := data.table::as.ITime(time)]
+        tab[, date := data.table::as.IDate(date)]
+        data.table::setorderv(tab, c("date", "time"), -1)
+      } else {
+        data.table::setorderv(tab, c("Title", "Version"), c(1, -1))
+      }
+      tab[, QuestionnaireIdVersion := sprintf("%s_%d", QuestionnaireId, Version)]
+      return(tab[])
+    })
+
+    questIdIn <- shiny::reactiveVal(NULL)
+    output$qTableIn <- DT::renderDT({
+      shiny::req(qData())
+      tab <- qData()
+      questIdIn(tab[, .(QuestionnaireId, Version, Title)])
+      tab <- DT::datatable(
+        tab[, .(Title, Version)],
+        list(dom = "tp"),
+        selection = "single",
+        rownames = FALSE,
+        style = "bootstrap"
+      )
+      shinyjs::show("headquest")
+      return(tab)
+    })
+
+    IDVARS <- shiny::reactiveVal(NULL)
+    LOCVARS <- shiny::reactiveVal(NULL)
+    GPSVAR <- shiny::reactiveVal(NULL)
+
+    shiny::observeEvent(input$qTableIn_rows_selected, {
+      sel <- input$qTableIn_rows_selected
+      waiter::waiter_show(
+        color = "rgba(13, 71, 161, 0.7)",
+        html = shiny::tagList(
+          waiter::spin_fading_circles(),
+          "Loading Questionnaire ..."
+        )
+      )
+      on.exit(waiter::waiter_hide(), add = TRUE)
+
+      iddata <- shiny::req(qData())
+      qid <- iddata[sel, QuestionnaireId]
+      v <- iddata[sel, Version]
+
+      qestStruct <- SurveySolutionsAPIv2::suso_getQuestDetails(
+        workspace = input$susoWS,
+        questID = qid,
+        version = v,
+        operation.type = "structure"
+      )
+
+      idvars <- qestStruct$q[Featured == TRUE & type != "GpsCoordinateQuestion", .(VariableName, type)]
+      gpsidvar <- qestStruct$q[Featured == TRUE & type == "GpsCoordinateQuestion", VariableName]
+      shinyjs::enable("suso_idvars")
+      IDVARS(idvars)
+
+      pts <- shiny::req(pointsfile())
+      locvars <- data.table::data.table(
+        VariableName = names(pts),
+        type = vapply(pts, function(col) class(col)[1], character(1))
+      )
+      locvars <- locvars[!(VariableName %in% c("lon_WGS84", "lat_WGS84"))]
+      LOCVARS(locvars)
+      GPSVAR(gpsidvar)
+    }, ignoreInit = TRUE)
+
+    # Query supervisor teams
+    teamtablequery <- shiny::reactive({
+      shiny::validate(shiny::need(apiCheck() == 200, message = FALSE))
+      SurveySolutionsAPIv2::suso_getSV(workspace = input$susoWS)
+    })
+
+    # Sample units table for assignment
+    output$assignTable <- DT::renderDT({
+      tab <- shiny::req(pointsfile())
+      if (!data.table::is.data.table(tab)) {
+        tab <- data.table::as.data.table(tab)
+      }
+      tab <- tab[, .(ea, area_id, siteID)]
+      DT::datatable(
+        tab,
+        escape = FALSE,
+        rownames = FALSE,
+        selection = "multiple",
+        options = list(
+          pageLength = 500,
+          scrollY = "500px",
+          scrollX = "300px",
+          scrollCollapse = TRUE,
+          paging = FALSE,
+          columnDefs = list(
+            list(className = "dt-center", targets = c(0:2)),
+            list(width = "20%", targets = c(0)),
+            list(width = "10%", targets = c(1)),
+            list(width = "5%", targets = c(2))
+          )
+        )
+      )
+    })
+
+    assingTabProxy <- DT::dataTableProxy(
+      "assignTable",
+      session = shiny::getDefaultReactiveDomain(),
+      deferUntilFlush = TRUE
+    )
+
+    # Supervisor teams table
+    output$teamTable <- DT::renderDT({
+      tab <- shiny::req(teamtablequery())
+      shiny::validate(shiny::need(nrow(tab) > 0, message = "No supervisor created!"))
+      tab <- tab[, .(UserName, IsLocked)]
+      DT::datatable(
+        tab,
+        escape = FALSE,
+        rownames = FALSE,
+        selection = "single",
+        options = list(
+          pageLength = 500,
+          scrollY = "500px",
+          scrollCollapse = TRUE,
+          paging = FALSE,
+          columnDefs = list(
+            list(className = "dt-center", targets = c(0:1)),
+            list(width = "20%", targets = c(0)),
+            list(width = "10%", targets = c(1))
+          )
+        )
+      )
+    })
+
+    shiny::observeEvent(input$select_button, {
+      shinyalert::shinyalert(
+        "Attention!",
+        paste0(
+          "Are you sure you want to reset the status of this Interview?\nID: ",
+          input$select_button,
+          "\nIf yes, please re-type the ID to confirm."
+        ),
+        type = "input",
+        inputId = "confirmReset",
+        inputType = "text",
+        closeOnEsc = TRUE,
+        closeOnClickOutside = TRUE,
+        showCancelButton = TRUE,
+        showConfirmButton = TRUE
+      )
+    })
+
+    # Map assignment & log
+    toassingoverview <- shiny::reactiveVal(
+      data.table::data.table(Team = character(0), AssignmentCount = integer(0))
+    )
+
+    shiny::observeEvent(input$suso_assignPoints, {
+      tabMAP <- pointsfile()
+      tabSV <- teamtablequery()
+      fullmap <- FULLMAP()
+      shiny::req(tabMAP, tabSV, fullmap)
+      shiny::validate(shiny::need(nrow(tabMAP) > 0 && nrow(tabSV) > 0, message = FALSE))
+
+      mapsel <- tabMAP[input$assignTable_rows_selected]
+      svsel <- tabSV[input$teamTable_rows_selected]
+      shiny::validate(shiny::need(nrow(mapsel) > 0 && nrow(svsel) > 0, message = FALSE))
+
+      mapsvselall <- data.table::copy(toassingoverview())
+      if ("Reset" %in% names(mapsvselall)) {
+        mapsvselall[, Reset := NULL]
+      }
+      mapsvsel <- data.table::data.table(
+        Team = svsel$UserName,
+        AssignmentCount = nrow(mapsel)
+      )
+      mapsvselall <- data.table::rbindlist(list(mapsvselall, mapsvsel), fill = TRUE)
+      toassingoverview(data.table::copy(mapsvselall))
+      DT::selectRows(assingTabProxy, selected = NULL)
+
+      # Assignment creation
+      mapsel <- mapsel[, c(fullmap$locvars, "lat_WGS84", "lon_WGS84"), with = FALSE]
+      AAout <- data.table::data.table(
+        mapsel,
+        ResponsibleName = svsel$UserName,
+        Quantity = 1,
+        gpsstring = paste0(round(mapsel$lat_WGS84, 8), "$", round(mapsel$lon_WGS84, 8))
+      )
+      gpsvar <- shiny::req(GPSVAR())
+      for (i in fullmap$locvars) {
+        idn <- fullmap[locvars == i, idvars]
+        data.table::setnames(AAout, i, idn)
+      }
+      data.table::setnames(AAout, "gpsstring", gpsvar)
+      AAout[, c("lon_WGS84", "lat_WGS84") := NULL]
+
+      if (nrow(AAout) > 0) {
+        iddata <- shiny::req(qData())
+        sel <- input$qTableIn_rows_selected
+        qid <- iddata[sel, QuestionnaireId]
+        v <- iddata[sel, Version]
+        status_list <- vector("list", nrow(AAout))
+        for (i in seq_len(nrow(AAout))) {
+          AAsing <- AAout[i]
+          status_list[[i]] <- SurveySolutionsAPIv2::suso_createASS(
+            df = AAsing,
+            workspace = input$susoWS,
+            questID = qid,
+            version = v
+          )
+        }
+      }
+    }, ignoreInit = TRUE)
+
+    # Assignment overview table
+    output$assignoverviewTable <- DT::renderDT({
+      shiny::validate(shiny::need(apiCheck() == 200, message = FALSE))
+      tab <- data.table::copy(toassingoverview())
+      shiny::req(nrow(tab) > 0)
+
+      tab[, Reset := shinyInput(
+        shiny::actionButton,
+        nrow(tab),
+        tab$Team,
+        label = "Reset",
+        style = styleActButton,
+        onclick = paste0('Shiny.setInputValue(\"', session$ns("reset_button"), '\", this.id, {priority: \"event\"})')
+      )]
+
+      tab <- DT::datatable(
+        tab,
+        escape = FALSE,
+        rownames = FALSE,
+        selection = "single",
+        options = list(
+          pageLength = 500,
+          scrollY = "500px",
+          scrollCollapse = TRUE,
+          paging = FALSE,
+          columnDefs = list(
+            list(className = "dt-center", targets = c(0:2)),
+            list(width = "20%", targets = c(0)),
+            list(width = "10%", targets = c(1)),
+            list(width = "5%", targets = c(2))
+          )
+        )
+      )
+      shinyjs::show("headass")
+      return(tab)
+    })
+
+    # Reset Map assignment
+    shiny::observeEvent(input$reset_button, {
+      ns <- session$ns
+      shinyalert::shinyalert(
+        type = "error",
+        title = "Attention!",
+        html = TRUE,
+        text = shiny::tagList(
+          shiny::HTML(
+            paste0(
+              "Are you sure you want to reset the team assignment for\nID:
+               <br><center><font color='#0d47a1'><big>",
+              input$reset_button,
+              "</big></font></center><br>\nIf yes, please re-type the ID to confirm."
+            )
+          ),
+          shiny::textInput(ns("confirmResetId"), "")
+        ),
+        inputId = "confirmReset",
+        inputType = "text",
+        closeOnEsc = TRUE,
+        closeOnClickOutside = TRUE,
+        showCancelButton = TRUE,
+        showConfirmButton = TRUE,
+        animation = "slide-from-top"
+      )
+    })
+
+    shiny::observeEvent(input$confirmReset, {
+      mapreset <- shiny::req(input$confirmResetId)
+      mapsvselall <- toassingoverview()
+      mapsvselall <- mapsvselall[Team != mapreset, ]
+      toassingoverview(mapsvselall)
+    }, ignoreInit = TRUE)
+
+    # Variable Mapping Module
+    FULLMAP <- suso_map_idSRV("dtModule", varsLocal = LOCVARS, varsSuso = IDVARS)
+
+    list(
+      apiCheck = apiCheck,
+      susoServer = susoServer,
+      susoWS = susoWS
+    )
+  })
 }
 
-# Helper Function
-## Function for creation of DT input button in table cell
+#' Generate a vector of HTML Shiny inputs for embedding in a DataTable
+#'
+#' @param FUN Shiny input function (e.g., [shiny::actionButton]).
+#' @param len Integer number of inputs to generate.
+#' @param id Character vector of input IDs (length `len`).
+#' @param ... Additional arguments passed to `FUN`.
+#'
+#' @return A character vector of serialized HTML strings.
+#' @noRd
+#' @keywords internal
 shinyInput <- function(FUN, len, id, ...) {
   inputs <- character(len)
   for (i in seq_len(len)) {
@@ -592,4 +703,3 @@ shinyInput <- function(FUN, len, id, ...) {
   }
   inputs
 }
-

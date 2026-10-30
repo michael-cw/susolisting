@@ -1,80 +1,62 @@
-#' Shiny UI module for upload of text (csv, tab) file
+#' Shiny UI module for uploading a text (CSV/TSV) or zipped CSV file
 #'
-#' Files can be provided unzipped or zip compressed.
+#' @param id Character string specifying the module namespace ID.
+#' @param label Character string for the file input label.
+#' @param accept Character vector of accepted MIME types or extensions.
 #'
-#' @param id Namespace identifier
-#' @param label File input label
-#' @param accept Mime type (i.e. must be one of)
-#'
+#' @return A `shiny.tag.list` object containing the [shiny::fileInput()] control.
 #' @noRd
 #' @keywords internal
-#'
-
-
 zipFileInput_ui <- function(id, label, accept) {
-  # Create a namespace function using the provided id
-  ns <- NS(id)
-
-  tagList(
-    fileInput(ns("frame_file"), label, multiple = F,
-              accept = accept)
+  ns <- shiny::NS(id)
+  shiny::tagList(
+    shiny::fileInput(ns("frame_file"), label, multiple = FALSE, accept = accept)
   )
 }
 
-#' Shiny server module for upload of text (csv, tab) file
+#' Shiny server module for uploading a text (CSV/TSV) or zipped CSV file
 #'
+#' @param id Character string specifying the module namespace ID.
+#' @param sep Character string specifying the column separator (default `","`).
+#' @param zipInput Logical indicating whether the uploaded file is a zip archive.
 #'
-#' @param input standard shiny input
-#' @param output standard shiny output
-#' @param session standard shiny session object
-#' @param sep column separator, one of , ; or "\\t"
-#' @param zipInput TRUE if upload is zip file
-#'
-#'
-#' @return returns datatable with upload data by using data.table's fread function
-#'
+#' @return A reactive expression returning a `data.table` parsed via
+#'   [data.table::fread()].
 #' @noRd
 #' @keywords internal
-#'
-
-
-
 zipFileInput_server <- function(id, sep = ",", zipInput = FALSE) {
-  moduleServer(id, function(input, output, session) {
-    userFile <- reactive({
-      # If no file is selected, don't do anything
-      validate(need(input$frame_file, message = FALSE))
+  shiny::moduleServer(id, function(input, output, session) {
+    userFile <- shiny::reactive({
+      shiny::validate(shiny::need(input$frame_file, message = FALSE))
       input$frame_file
     })
 
-    frameFile<-reactive({
-      if(!zipInput){
-        # csv file
-        filein<-data.table::fread(userFile()$datapath, sep = sep)
-      } else if(zipInput) {
-        # zip file
-        shpFiles<-tempdir()
+    frameFile <- shiny::reactive({
+      if (!zipInput) {
+        filein <- data.table::fread(userFile()$datapath, sep = sep)
+      } else {
+        shpFiles <- file.path(tempdir(), "zip_csv_input")
+        unlink(shpFiles, recursive = TRUE)
+        dir.create(shpFiles, recursive = TRUE, showWarnings = FALSE)
 
-        ## 1. Unpack File
-        unlink(paste0(shpFiles, "/*"))
-        zip::unzip(userFile()$datapath,
-                   exdir = shpFiles,
-                   overwrite = T,
-                   junkpaths = T)
-        fileList<-dir(shpFiles, recursive = TRUE, full.names = T)
-        csvFile<-fileList[grep(".csv$", fileList)]
-        if (length(csvFile)==0) {
-          showModal(modalDialog(
+        zip::unzip(
+          userFile()$datapath,
+          exdir = shpFiles,
+          overwrite = TRUE,
+          junkpaths = TRUE
+        )
+        fileList <- dir(shpFiles, recursive = TRUE, full.names = TRUE)
+        csvFile <- fileList[grep("\\.csv$", fileList)]
+        if (length(csvFile) == 0) {
+          shiny::showModal(shiny::modalDialog(
             title = "Wrong Format!",
-            "Your file is not provided in the correct format (ESRI Shapefile, Single Folder, zip).
-            Please check and upload again.",
+            "Your file is not provided in the correct format (zipped CSV file). Please check and upload again.",
             easyClose = TRUE,
             footer = NULL
           ))
-          req(FALSE)
+          shiny::req(FALSE)
         }
-        ## 2. Read csv into data.table
-        filein<-data.table::fread(file = csvFile, sep = sep)
+        filein <- data.table::fread(file = csvFile[1], sep = sep)
       }
       return(filein)
     })
@@ -82,5 +64,3 @@ zipFileInput_server <- function(id, sep = ",", zipInput = FALSE) {
     return(frameFile)
   })
 }
-
-

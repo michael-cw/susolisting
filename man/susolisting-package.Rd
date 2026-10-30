@@ -6,7 +6,15 @@
 \alias{susolisting-package}
 \title{susolisting: Shiny Application for EA Listing on Satellite Imagery}
 \description{
-A simple shiny application to mark buildings on a google map within user provided enumeration area (EA) boundaries. The application requires the input of boundaries in ESRI shape file format, and returns a csv file with all the listed buildings. It is part of the larger series of support tools for using spatial resources with Survey Solutions.
+A Shiny application to mark buildings on a Google satellite map within user-provided enumeration area (EA) boundaries. The application requires the input of boundaries in ESRI shapefile format, and returns a CSV file with all the listed buildings, supports second-stage spatially balanced sampling via 'spsurvey', and integrates with 'Survey Solutions' for team assignment creation.
+}
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://github.com/michael-cw/susolisting}
+  \item Report bugs at \url{https://github.com/michael-cw/susolisting/issues}
+}
+
 }
 \author{
 \strong{Maintainer}: Michael Wild \email{mwild@worldbank.org}

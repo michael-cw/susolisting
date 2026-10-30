@@ -1,214 +1,238 @@
+#' Shiny module UI button for mapping sample variables to Survey Solutions IDs
 #'
+#' @param id Character string specifying the module namespace ID.
+#'
+#' @return A `shiny.tag.list` object containing the action button and input script.
 #' @noRd
 #' @keywords internal
-#'
-
 suso_map_idUI <- function(id) {
-  ns <- NS(id)
-  tagList(
-    tags$script("
+  ns <- shiny::NS(id)
+  shiny::tagList(
+    shiny::tags$script(shiny::HTML("
     $(document).on('change', 'select', function() {
       var selectId = this.id;
       var selectValue = this.value;
-      Shiny.onInputChange(selectId, selectValue);
+      if (window.Shiny && typeof Shiny.setInputValue === 'function') {
+        Shiny.setInputValue(selectId, selectValue);
+      }
     });
-  "),
-    actionButton(ns("suso_idvars"),
-                 "Map Variables for Assignment Creation",
-                 width = "100%",
-                 icon("upload"),
-                 style="color: #FFFFFF;
-                 background-color: #1976D2;
-                 border-color: #1976D2")
+    ")),
+    shiny::actionButton(
+      ns("suso_idvars"),
+      "Map Variables for Assignment Creation",
+      width = "100%",
+      shiny::icon("upload"),
+      style = "color: #FFFFFF; background-color: #1976D2; border-color: #1976D2"
+    )
   )
-
 }
 
+#' Shiny module UI table output for displaying mapped variables
 #'
+#' @param id Character string specifying the module namespace ID.
+#' @param height CSS height string for the DT table.
+#'
+#' @return A `shiny.tag.list` object containing the DT output.
 #' @noRd
 #' @keywords internal
-#'
-
-suso_map_idUI_maptable<-function(id, height) {
-  ns <- NS(id)
-  tagList(
-    DT::dataTableOutput(ns("fullmaptable"), height = height)
+suso_map_idUI_maptable <- function(id, height) {
+  ns <- shiny::NS(id)
+  shiny::tagList(
+    DT::DTOutput(ns("fullmaptable"), height = height)
   )
-
 }
 
+#' Shiny module server for mapping sample variables to Survey Solutions ID variables
 #'
+#' @param id Character string specifying the module namespace ID.
+#' @param varsLocal Reactive expression returning a `data.table` of local variables
+#'   (`VariableName`, `type`).
+#' @param varsSuso Reactive expression returning a `data.table` of Survey Solutions
+#'   featured ID variables (`VariableName`, `type`).
+#'
+#' @return A reactive value (`reactiveVal`) holding a `data.table` with columns
+#'   `locvars` and `idvars`.
 #' @noRd
 #' @keywords internal
-#'
-
 suso_map_idSRV <- function(id,
-                            varsLocal = reactive(NULL),
-                            varsSuso = reactive(NULL)) {
-  moduleServer(id, function(input, output, session) {
-    # Namespace
-    ns<-session$ns
+                           varsLocal = shiny::reactive(NULL),
+                           varsSuso = shiny::reactive(NULL)) {
+  shiny::moduleServer(id, function(input, output, session) {
+    ns <- session$ns
 
     stopifnot(
       shiny::is.reactive(varsLocal),
       shiny::is.reactive(varsSuso)
     )
 
-    # styles
-    styleDwlButton<-c("color: #FFFFFF;  width: 180px;background-color: #1976D2;
-                  border-color: #1976D2;
-                  margin:0 20% 0 20%;")
-    action_btn_close <-c("color: #FFFFFF; background-color: #0d47a1; border-color: #0d47a1")
+    styleDwlButton <- "color: #FFFFFF; width: 180px; background-color: #1976D2; border-color: #1976D2; margin:0 20% 0 20%;"
+    action_btn_close <- "color: #FFFFFF; background-color: #0d47a1; border-color: #0d47a1"
 
-    # Create the data.frame with selectInput fields for datatable
-    df_for_table <- reactive({
-      req(varsLocal(), varsSuso())
+    df_for_table <- shiny::reactive({
+      shiny::req(varsLocal(), varsSuso())
 
-      # create suso choices
-      susoChoices<-setNames(
+      susoChoices <- stats::setNames(
         c("", paste(varsSuso()$VariableName)),
         c("", paste(varsSuso()$VariableName, varsSuso()$type))
       )
-      # create local choices
-      localChoices<-setNames(
+      localChoices <- stats::setNames(
         c("", paste(varsLocal()$VariableName)),
         c("", paste(varsLocal()$VariableName, varsLocal()$type))
       )
+      n_rows <- nrow(varsLocal())
       data.frame(
-        `Sample Variables` = sapply(1:nrow(varsLocal()), function(i) {
-          as.character(selectInput(ns(paste0("select_", i)),
-                                   "",
-                                   choices = localChoices,
-                                   selected = NULL ))
-        }),
-        `ID variables` = sapply(1:nrow(varsLocal()), function(i) {
-          as.character(selectInput(ns(paste0("select2_", i)),
-                                   "",
-                                   choices = susoChoices,
-                                   selected = NULL))
-        })
+        `Sample Variables` = vapply(seq_len(n_rows), function(i) {
+          as.character(shiny::selectInput(
+            ns(paste0("select_", i)),
+            "",
+            choices = localChoices,
+            selected = NULL
+          ))
+        }, character(1)),
+        `ID variables` = vapply(seq_len(n_rows), function(i) {
+          as.character(shiny::selectInput(
+            ns(paste0("select2_", i)),
+            "",
+            choices = susoChoices,
+            selected = NULL
+          ))
+        }, character(1))
       )
     })
 
-    # Create table for modal
-    output$maptable <- DT::renderDataTable({
-      req(df_for_table())
-      datatable(df_for_table(),
-                escape = FALSE,
-                rownames = F,
-                colnames = c("Sample Variables", "ID variables"),
-                options = list(
-                  dom = 'tp',
-                  paging = T,
-                  searching = FALSE,
-                  pageLength = 10,
-                  columnDefs = list(list(className = 'dt-center', targets = '_all',
-                                         width = '50%', targets = c(0),
-                                         width = '50%', targets = c(1)
-                  ))
-                ),
-                selection = "none") %>%
-        formatStyle(1,
-                    fontWeight = 'bold',
-                    textAlign = 'center',
-                    color = '#1976D2') %>%
-        formatStyle(2,
-                    fontWeight = 'bold',
-                    textAlign = 'center',
-                    color = '#1976D2')
-    }, server = FALSE)
-
-    # Modal for mapping
-    observeEvent(input$suso_idvars, {
-      req(df_for_table())
-
-      showModal(modalDialog(title =tags$div(
-        HTML("<center><font color='#0d47a1'><big>Mapping of Variables</big></font></center>")),
-        fluidRow(
-          column(1),
-          column(10,
-                 div(id = "helpTmodal", style = "text-align: center !important; color: #0d47a1; font-weight: bold;",
-                     h5("Please select the variables from the available variables in the sample to be mapped to
-                     the ID variables from the questionnaire. Make sure, that the variable types match, as otherwise
-                        the assignment will fail.")
-                 )
-          ),
-          column(1)
-        ),
-        fluidRow(
-          div(style = "text-align: center;",
-          DT::dataTableOutput(ns("maptable"))
+    output$maptable <- DT::renderDT({
+      shiny::req(df_for_table())
+      DT::datatable(
+        df_for_table(),
+        escape = FALSE,
+        rownames = FALSE,
+        colnames = c("Sample Variables", "ID variables"),
+        options = list(
+          dom = "tp",
+          paging = TRUE,
+          searching = FALSE,
+          pageLength = 10,
+          columnDefs = list(
+            list(className = "dt-center", targets = "_all"),
+            list(width = "50%", targets = c(0, 1))
           )
         ),
-        br(),
-        fluidRow(
-          column(8,
-                 actionButton(ns("submit"),"Submit",
-                              style=styleDwlButton)
+        selection = "none"
+      ) %>%
+        DT::formatStyle(
+          1,
+          fontWeight = "bold",
+          textAlign = "center",
+          color = "#1976D2"
+        ) %>%
+        DT::formatStyle(
+          2,
+          fontWeight = "bold",
+          textAlign = "center",
+          color = "#1976D2"
+        )
+    }, server = FALSE)
+
+    shiny::observeEvent(input$suso_idvars, {
+      shiny::req(df_for_table())
+
+      shiny::showModal(shiny::modalDialog(
+        title = shiny::tags$div(
+          shiny::HTML("<center><font color='#0d47a1'><big>Mapping of Variables</big></font></center>")
+        ),
+        shiny::fluidRow(
+          shiny::column(1),
+          shiny::column(
+            10,
+            shiny::div(
+              id = "helpTmodal",
+              style = "text-align: center !important; color: #0d47a1; font-weight: bold;",
+              shiny::h5(
+                "Please select the variables from the available variables in the sample to be mapped to
+                 the ID variables from the questionnaire. Make sure that the variable types match, as otherwise
+                 the assignment will fail."
+              )
+            )
           ),
-          column(4,
-                 actionButton(ns("cancel"),"Cancel",
-                              style=action_btn_close)
+          shiny::column(1)
+        ),
+        shiny::fluidRow(
+          shiny::div(
+            style = "text-align: center;",
+            DT::DTOutput(ns("maptable"))
+          )
+        ),
+        shiny::br(),
+        shiny::fluidRow(
+          shiny::column(
+            8,
+            shiny::actionButton(ns("submit"), "Submit", style = styleDwlButton)
+          ),
+          shiny::column(
+            4,
+            shiny::actionButton(ns("cancel"), "Cancel", style = action_btn_close)
           )
         ),
         footer = NULL,
-        easyClose = T, size = "l"
+        easyClose = TRUE,
+        size = "l"
       ))
-
-    })
-    # close modal (no action)
-    observeEvent(input$cancel, {
-      removeModal()
     })
 
-    FULLVARMAP<-reactiveVal(NULL)
-    observeEvent(input$submit, {
-      removeModal()
-      selected_in_col1 <- sapply(1:nrow(varsLocal()), function(i) input[[paste0("select_", i)]])
-      selected_in_col2 <- sapply(1:nrow(varsLocal()), function(i) input[[paste0("select2_", i)]])
+    shiny::observeEvent(input$cancel, {
+      shiny::removeModal()
+    })
 
-      # mapping table
-      fullmap<-data.table::data.table(locvars=unlist(selected_in_col1), idvars=unlist(selected_in_col2))
+    FULLVARMAP <- shiny::reactiveVal(NULL)
+    shiny::observeEvent(input$submit, {
+      shiny::removeModal()
+      n_rows <- nrow(varsLocal())
+      selected_in_col1 <- lapply(seq_len(n_rows), function(i) input[[paste0("select_", i)]] %||% "")
+      selected_in_col2 <- lapply(seq_len(n_rows), function(i) input[[paste0("select2_", i)]] %||% "")
+
+      fullmap <- data.table::data.table(
+        locvars = unlist(selected_in_col1),
+        idvars = unlist(selected_in_col2)
+      )
+      fullmap <- fullmap[!is.na(locvars) & !is.na(idvars) & locvars != "" & idvars != ""]
       FULLVARMAP(fullmap)
-
-      print(paste("Selected variable names from varsLocal():", paste(selected_in_col1, collapse = ", ")))
-      print(paste("Selected variable names from varsSuso():", paste(selected_in_col2, collapse = ", ")))
     })
 
-    # Create table for map overview
-    output$fullmaptable <- DT::renderDataTable({
-      req(FULLVARMAP())
-      tabDT<-datatable(FULLVARMAP(),
-                       escape = FALSE,
-                       rownames = F,
-                       colnames = c("Sample", "ID"),
-                       options = list(
-                         dom = 'tp',
-                         paging = T,
-                         searching = FALSE,
-                         pageLength = 3,
-                         columnDefs = list(list(className = 'dt-center', targets = '_all',
-                                                width = '50%', targets = c(0),
-                                                width = '50%', targets = c(1)
-                         ))
-                       ),
-                       selection = "none") %>%
-        formatStyle(1,
-                    fontWeight = 'bold',
-                    textAlign = 'center',
-                    color = '#1976D2') %>%
-        formatStyle(2,
-                    fontWeight = 'bold',
-                    textAlign = 'center',
-                    color = '#1976D2')
-
-      return(tabDT)
+    output$fullmaptable <- DT::renderDT({
+      shiny::req(FULLVARMAP())
+      DT::datatable(
+        FULLVARMAP(),
+        escape = FALSE,
+        rownames = FALSE,
+        colnames = c("Sample", "ID"),
+        options = list(
+          dom = "tp",
+          paging = TRUE,
+          searching = FALSE,
+          pageLength = 3,
+          columnDefs = list(
+            list(className = "dt-center", targets = "_all"),
+            list(width = "50%", targets = c(0, 1))
+          )
+        ),
+        selection = "none"
+      ) %>%
+        DT::formatStyle(
+          1,
+          fontWeight = "bold",
+          textAlign = "center",
+          color = "#1976D2"
+        ) %>%
+        DT::formatStyle(
+          2,
+          fontWeight = "bold",
+          textAlign = "center",
+          color = "#1976D2"
+        )
     }, server = FALSE)
 
-    ########################
-    # RETURNS
     return(FULLVARMAP)
-
   })
 }
 
+`%||%` <- function(x, y) if (is.null(x)) y else x

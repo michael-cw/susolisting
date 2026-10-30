@@ -4,7 +4,7 @@
 \alias{runListingApp}
 \title{Start the Survey Solutions Listing Application}
 \usage{
-runListingApp(launch.browser = T, admuser = NULL, admpass = NULL)
+runListingApp(launch.browser = TRUE, admuser = NULL, admpass = NULL)
 }
 \arguments{
 \item{launch.browser}{If true, the system's default web browser will be
@@ -12,56 +12,30 @@ launched automatically after the app is started. Defaults to true in
 interactive sessions only. The value of this parameter can also be a
 function to call with the application's URL.}
 
-\item{admuser}{user name for admin}
+\item{admuser}{Character string specifying the admin username (optional).}
 
-\item{admpass}{user password for admin}
+\item{admpass}{Character string specifying the admin password (optional).}
+}
+\value{
+The return value of \code{\link[shiny:runApp]{shiny::runApp()}}.
 }
 \description{
-A wrappter function to start the application. Please make sure you have read the
-documentation on how to use the app under \url{https://datanalytics.worldbank.org/SpatialSamplingManual/}
+A wrapper function to start the interactive Shiny application.
+Please make sure you have read the documentation on how to use the app at
+\url{https://datanalytics.worldbank.org/SpatialSamplingManual/}.
 }
 \details{
-This application is part of the large set of tools, to facilitate survey implementation with
-\href{https://docs.mysurvey.solutions/}{Survey Solutions}. Enumeration Areas, sampled for example
-with the JDC-Survey Solutions Spatial Sampling application, can be used to enumerate all buildings
-visible within the boundaries on a Google map. The enumerate buildings can then be used for the
-second stage sampling frame and to draw the survey units within the cluster from it.
+This application is part of the suite of tools facilitating survey
+implementation with \href{https://docs.mysurvey.solutions/}{Survey Solutions}.
+Enumeration Areas (e.g., sampled with the JDC-Survey Solutions Spatial
+Sampling application) can be used to enumerate all buildings visible within
+the boundaries on a Google satellite map. The enumerated buildings can then
+be used for the second-stage sampling frame and to draw survey units within
+each cluster.
 }
 \examples{
-\dontrun{
-# Start app in the current working directory
-runApp()
-
-# Start app in a subdirectory called myapp
-runApp("myapp")
-}
-
-## Only run this example in interactive R sessions
 if (interactive()) {
-  options(device.ask.default = FALSE)
-
-  # Apps can be run without a server.r and ui.r file
-  runApp(list(
-    ui = bootstrapPage(
-      numericInput('n', 'Number of obs', 100),
-      plotOutput('plot')
-    ),
-    server = function(input, output) {
-      output$plot <- renderPlot({ hist(runif(input$n)) })
-    }
-  ))
-
-
-  # Running a Shiny app object
-  app <- shinyApp(
-    ui = bootstrapPage(
-      numericInput('n', 'Number of obs', 100),
-      plotOutput('plot')
-    ),
-    server = function(input, output) {
-      output$plot <- renderPlot({ hist(runif(input$n)) })
-    }
-  )
-  runApp(app)
+  runListingApp()
 }
+
 }

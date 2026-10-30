@@ -3,13 +3,15 @@ Title: Shiny Application for EA Listing on Satellite Imagery
 Version: 0.2.0
 Authors@R: 
     person("Michael", "Wild", , "mwild@worldbank.org", role = c("aut", "cre"))
-Description: A simple shiny application to mark buildings on a google map
-    within user provided enumeration area (EA) boundaries. The application
-    requires the input of boundaries in ESRI shape file format, and
-    returns a csv file with all the listed buildings. It is part of the
-    larger series of support tools for using spatial resources with Survey
-    Solutions.
+Description: A Shiny application to mark buildings on a Google satellite map
+    within user-provided enumeration area (EA) boundaries. The application
+    requires the input of boundaries in ESRI shapefile format, and
+    returns a CSV file with all the listed buildings, supports second-stage
+    spatially balanced sampling via 'spsurvey', and integrates with 'Survey
+    Solutions' for team assignment creation.
 License: MIT + file LICENSE
+URL: https://github.com/michael-cw/susolisting
+BugReports: https://github.com/michael-cw/susolisting/issues
 Imports: 
     data.table,
     dplyr,
@@ -20,18 +22,19 @@ Imports:
     readr,
     sf,
     shiny,
-    shinyalert,
+    shinyalert (>= 3.0.0),
     shinydashboard,
     shinyjs,
-    shinyWidgets,
     spsurvey,
     stringr,
-    SurveySolutionsAPI,
+    SurveySolutionsAPIv2,
     tools,
-    utils,
     waiter,
     zip
+Suggests: 
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
 Encoding: UTF-8
 Language: en
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.2

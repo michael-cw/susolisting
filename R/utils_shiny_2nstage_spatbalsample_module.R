@@ -1,22 +1,30 @@
-#' utm transformation by long/lat zone
+#' Project an sf object to its appropriate UTM zone
 #'
+#' @description Determines the UTM zone from the bounding box of a geographic
+#' (WGS84) `sf` object and transforms it to the corresponding WGS84 UTM EPSG
+#' projection (`326xx` for Northern Hemisphere, `327xx` for Southern Hemisphere).
 #'
+#' @param shp An `sf` object in geographic coordinates (longitude/latitude).
+#'
+#' @return The `sf` object transformed to its corresponding UTM CRS.
 #' @noRd
 #' @keywords internal
-#'
+project_to_utm <- function(shp) {
+  bbox <- sf::st_bbox(shp)
+  maxLong <- unname(bbox["xmax"])
+  maxLat <- unname(bbox["ymax"])
 
-
-project_to_utm<-function(shp) {
-  ## 1. get zone
-  maxLong<-sf::st_bbox(shp)[3]
-  long2UTM <- function(long=maxLong) {
-    (floor((long + 180)/6) %% 60) + 1
+  long2UTM <- function(long = maxLong) {
+    (floor((long + 180) / 6) %% 60) + 1
   }
-  ## 2. Create CRS string
-  utmZone<-long2UTM()
-  epsg<-ifelse(sf::st_bbox(shp)[4]<=0, sprintf("327%2d", utmZone) ,sprintf("326%2d", utmZone))
-  #crs=(paste0("+proj=utm +south +zone=", utmZone, " +ellps=WGS84 +towgs84=0,0,0, +init=epsg:",epsg))
-  ## 3. Transform
-  shp<-shp %>% sf::st_transform(as.numeric(epsg))
+
+  utmZone <- as.integer(long2UTM())
+  epsg <- ifelse(
+    maxLat <= 0,
+    sprintf("327%02d", utmZone),
+    sprintf("326%02d", utmZone)
+  )
+
+  shp <- sf::st_transform(shp, as.numeric(epsg))
   return(shp)
 }
