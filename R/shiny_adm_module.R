@@ -193,7 +193,7 @@ modal_adminspsample_server <- function(id, side = shiny::reactive(NULL)) {
           if (nrow(dilist) == 0) next
           allfiles[[basename(di)]] <- dilist
         }
-        allfiles <- data.table::rbindlist(allfiles, idcol = "dir")
+        allfiles <- data.table::rbindlist(allfiles, idcol = "dir", fill = TRUE)
         shiny::req(nrow(allfiles) > 0)
 
         framefiles(allfiles)
@@ -234,10 +234,16 @@ modal_adminspsample_server <- function(id, side = shiny::reactive(NULL)) {
           fn <- fnall$listfiles[i]
           if (file.exists(fn)) {
             eaname <- basename(tools::file_path_sans_ext(fn))
-            points_dt[[eaname]] <- fst::read_fst(fn, as.data.table = TRUE)
+            dt_item <- fst::read_fst(fn, as.data.table = TRUE)
+            if (!"coverage_pct" %in% names(dt_item) || all(is.na(dt_item$coverage_pct))) {
+              cov_res <- calculate_polygon_coverage(polygon_sf = NULL, points_df = dt_item)
+              dt_item[, coverage_pct := cov_res$coverage_pct]
+              dt_item[, coverage_status := cov_res$coverage_status]
+            }
+            points_dt[[eaname]] <- dt_item
           }
         }
-        points_dt <- data.table::rbindlist(points_dt, idcol = "ea")
+        points_dt <- data.table::rbindlist(points_dt, idcol = "ea", fill = TRUE)
         data.table::setorderv(points_dt, c("ea", "long", "lat"))
         dt_frame(points_dt)
       }

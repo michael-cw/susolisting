@@ -217,6 +217,39 @@ test_that("modal_adminspsample_server verifies admin credentials", {
         admincheck = TRUE
       )
       expect_true(session$returned$admcheckok())
+
+      # Test frame compilation combining legacy 3-column and new 5-column .fst files
+      tmp_storage <- file.path(tempdir(), "test_adm_mixed_fst")
+      old_storage <- getOption("susolisting.storage_dir")
+      on.exit({
+        options(susolisting.storage_dir = old_storage)
+        unlink(tmp_storage, recursive = TRUE)
+      }, add = TRUE)
+      options(susolisting.storage_dir = tmp_storage)
+
+      user_dir <- file.path(tmp_storage, "enum1_bounds")
+      dir.create(user_dir, recursive = TRUE, showWarnings = FALSE)
+      fst::write_fst(
+        data.table::data.table(long = c(10.01, 10.02), lat = c(50.01, 50.02), area_id = c("1", "1")),
+        file.path(user_dir, "area_1.fst")
+      )
+      fst::write_fst(
+        data.table::data.table(
+          long = c(10.05, 10.06),
+          lat = c(50.05, 50.06),
+          area_id = c("2", "2"),
+          coverage_pct = c(25.0, 25.0),
+          coverage_status = c("OK", "OK")
+        ),
+        file.path(user_dir, "area_2.fst")
+      )
+
+      session$setInputs(generateFrame = 1L)
+      session$setInputs(framecreatconfirm = TRUE)
+      expect_s3_class(dt_frame(), "data.table")
+      expect_equal(nrow(dt_frame()), 4L)
+      expect_true(all(c("coverage_pct", "coverage_status") %in% names(dt_frame())))
+      expect_false(any(is.na(dt_frame()$coverage_pct)))
     }
   )
 })
