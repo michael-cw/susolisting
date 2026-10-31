@@ -266,7 +266,7 @@ modal_adminspsample_server <- function(id, side = shiny::reactive(NULL)) {
         ),
         val = c(
           round(c(
-            dplyr::n_distinct(dtframe$ea),
+            length(unique(dtframe$ea)),
             nrow(dtframe),
             mean(dtframegr$ean),
             min(dtframegr$ean),
@@ -317,7 +317,7 @@ modal_adminspsample_server <- function(id, side = shiny::reactive(NULL)) {
           "Sampling Weight CV"
         ),
         val = round(c(
-          dplyr::n_distinct(dtframe$ea),
+          length(unique(dtframe$ea)),
           nrow(dtframe),
           mean(dtframe$wgt),
           min(dtframe$wgt),

@@ -189,11 +189,13 @@ modal_spsample2stage_server <- function(id,
       lat <- names(frdat)[grepl(x = names(frdat), pattern = patternlat, ignore.case = TRUE)][1]
       long <- names(frdat)[grepl(x = names(frdat), pattern = patternlong, ignore.case = TRUE)][1]
 
-      frdat <- frdat %>%
-        dplyr::filter(!is.na(.data[[lat]]) & !is.na(.data[[long]])) %>%
-        dplyr::group_by(.data[[input$clustervar]]) %>%
-        dplyr::mutate(CLUSTERCOUNT = dplyr::n()) %>%
-        as.data.frame()
+      frdat <- as.data.frame(frdat)
+      frdat <- frdat[!is.na(frdat[[lat]]) & !is.na(frdat[[long]]), , drop = FALSE]
+      frdat$CLUSTERCOUNT <- stats::ave(
+        seq_len(nrow(frdat)),
+        as.character(frdat[[input$clustervar]]),
+        FUN = length
+      )
 
       frdat <- sf::st_as_sf(frdat, coords = c(long, lat), crs = 4326)
       frdat <- project_to_utm(frdat)

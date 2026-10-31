@@ -18,11 +18,11 @@ shapeLoad2 <- function(path = NULL, lay = NULL, sp.Library = "sf") {
 
   if (sum(sf::st_is_valid(SHP), na.rm = TRUE) != nrow(SHP)) {
     suppressWarnings(
-      SHP <- SHP %>%
-        sf::st_transform(3857) %>%
-        sf::st_make_valid() %>%
-        sf::st_cast("MULTIPOLYGON") %>%
-        sf::st_buffer(0.0) %>%
+      SHP <- SHP |>
+        sf::st_transform(3857) |>
+        sf::st_make_valid() |>
+        sf::st_cast("MULTIPOLYGON") |>
+        sf::st_buffer(0.0) |>
         sf::st_transform(crsOld)
     )
   }
@@ -49,14 +49,10 @@ shapeLoad2 <- function(path = NULL, lay = NULL, sp.Library = "sf") {
 #' @noRd
 #' @keywords internal
 sanitize_string <- function(input_string, repl_for_whitespace = "_") {
-  sanitized_string <- stringr::str_replace_all(
-    input_string,
-    "[^a-zA-Z0-9_]",
-    stringr::fixed(" ")
-  ) %>%
-    iconv("UTF-8", "ASCII", sub = "") %>%
-    stringr::str_squish() %>%
-    stringr::str_replace_all(stringr::fixed(" "), repl_for_whitespace)
+  sanitized_string <- gsub("[^a-zA-Z0-9_]", " ", input_string)
+  sanitized_string <- iconv(sanitized_string, from = "UTF-8", to = "ASCII", sub = "")
+  sanitized_string <- trimws(gsub("[[:space:]]+", " ", sanitized_string))
+  sanitized_string <- gsub(" ", repl_for_whitespace, sanitized_string, fixed = TRUE)
 
   return(sanitized_string)
 }

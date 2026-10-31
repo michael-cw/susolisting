@@ -371,7 +371,7 @@ mapadminSRV_st2 <- function(id, pointsfile = shiny::reactive({ NULL })) {
         rownames = FALSE,
         colnames = c("", ""),
         style = "bootstrap"
-      ) %>% infoTable()
+      ) |> infoTable()
     })
 
     # Questionnaire list

@@ -185,16 +185,13 @@ main_server <- function(input, output, session) {
       provider_label <- if (identical(provider, "vantor")) "Vantor API credentials" else "Google API key"
 
       appdir <- get_app_download_dir()
-      notmessage <- shiny::HTML(
-        sprintf(
-          "You are successfully logged in and have provided the required %s. Your files for this session will be stored
-           in your personal user directory under, <b>%s/%s_[upload file name]</b>. After uploading the file, you can see the complete file
-           path.",
-          provider_label, appdir, usr
-        ) %>%
-          stringr::str_remove_all("\\n") %>%
-          stringr::str_squish()
+      raw_msg <- sprintf(
+        "You are successfully logged in and have provided the required %s. Your files for this session will be stored
+         in your personal user directory under, <b>%s/%s_[upload file name]</b>. After uploading the file, you can see the complete file
+         path.",
+        provider_label, appdir, usr
       )
+      notmessage <- shiny::HTML(trimws(gsub("[[:space:]]+", " ", gsub("\n", "", raw_msg))))
 
       shiny::showNotification(
         ui = notmessage,
@@ -237,7 +234,7 @@ main_server <- function(input, output, session) {
       ))
     }
 
-    ufn <- stringr::str_remove_all(input$new_shape$name, pattern = "\\.zip$")
+    ufn <- gsub("\\.zip$", "", input$new_shape$name)
     uplFileName(ufn)
     shiny::validate(shiny::need(shpFile, message = FALSE))
 
@@ -275,11 +272,9 @@ main_server <- function(input, output, session) {
   counter <- shiny::reactiveVal(1)
   areaIDs <- shiny::eventReactive(input$area_id, {
     shiny::validate(shiny::need(input$area_id, message = FALSE))
-    ids_df <- boundaryFile() %>%
-      dplyr::select(dplyr::all_of(input$area_id)) %>%
-      sf::st_set_geometry(NULL)
+    ids_df <- sf::st_set_geometry(boundaryFile(), NULL)
     ids <- ids_df[[input$area_id]]
-    if (nrow(boundaryFile()) != dplyr::n_distinct(ids)) {
+    if (nrow(boundaryFile()) != length(unique(ids))) {
       shiny::showModal(shiny::modalDialog(
         title = "ID is not unique across Enumeration Areas",
         shiny::HTML(
@@ -326,20 +321,17 @@ main_server <- function(input, output, session) {
       return(invisible(FALSE))
     }
     curr_fp <- fp()
-    clean_id <- stringr::str_replace_all(as.character(target_area_id), "[!@#$%^&*/\\\\]*", "")
+    clean_id <- gsub("[!@#$%^&*/\\\\]*", "", as.character(target_area_id))
 
     if (is_first_area) {
       provider_label <- if (identical(provider, "vantor")) "Vantor API credentials" else "Google API key"
-      notmessage <- shiny::HTML(
-        sprintf(
-          "You are successfully logged in and have provided the required %s. Your files for this session will be stored
-           in your personal user directory under, <b>%s</b>. After uploading the file, you can see the complete file
-           path.",
-          provider_label, curr_fp
-        ) %>%
-          stringr::str_remove_all("\\n") %>%
-          stringr::str_squish()
+      raw_full_msg <- sprintf(
+        "You are successfully logged in and have provided the required %s. Your files for this session will be stored
+         in your personal user directory under, <b>%s</b>. After uploading the file, you can see the complete file
+         path.",
+        provider_label, curr_fp
       )
+      notmessage <- shiny::HTML(trimws(gsub("[[:space:]]+", " ", gsub("\n", "", raw_full_msg))))
       shiny::removeNotification(id = "userinfostart")
       shiny::showNotification(
         ui = notmessage,
@@ -473,7 +465,7 @@ main_server <- function(input, output, session) {
     tmp.counter <- shiny::req(counter())
     shiny::validate(shiny::need(tmp.counter >= 1 && tmp.counter <= length(ids), message = FALSE))
     tmp.areaID <- ids[tmp.counter]
-    fn <- stringr::str_replace_all(as.character(tmp.areaID), "[!@#$%^&*/\\\\]*", "")
+    fn <- gsub("[!@#$%^&*/\\\\]*", "", as.character(tmp.areaID))
     fn <- file.path(fp(), paste0("area_", fn, ".fst"))
     if (file.exists(fn)) {
       points_old <- fst::read_fst(fn, as.data.table = TRUE)
@@ -498,7 +490,7 @@ main_server <- function(input, output, session) {
     point_file_list <- list.files(FP, pattern = "\\.fst$", full.names = TRUE)
     shiny::validate(shiny::need(length(point_file_list) > 0, message = FALSE))
     point_file_names <- basename(tools::file_path_sans_ext(point_file_list))
-    point_file_names <- stringr::str_remove(point_file_names, "^area_")
+    point_file_names <- sub("^area_", "", point_file_names)
     return(point_file_names)
   }, ignoreInit = TRUE)
 
@@ -526,7 +518,7 @@ main_server <- function(input, output, session) {
     new_pts <- pointsCollectorGoogle()
 
     id_area <- lga.sel[, input$area_id, drop = TRUE]
-    clean_id <- stringr::str_replace_all(as.character(id_area), "[!@#$%^&*/\\\\]*", "")
+    clean_id <- gsub("[!@#$%^&*/\\\\]*", "", as.character(id_area))
     FP <- fp()
     FPfile <- file.path(FP, paste0("area_", clean_id, ".fst"))
 
@@ -585,7 +577,7 @@ main_server <- function(input, output, session) {
       vantor_prod <- shiny::isolate(vantorProduct())
       bb <- as.numeric(sf::st_bbox(lga.sel))
 
-      map <- leaflet::leaflet(options = leaflet::leafletOptions(maxZoom = 21L)) %>%
+      map <- leaflet::leaflet(options = leaflet::leafletOptions(maxZoom = 21L)) |>
         vantorr::add_vantor_basemap(
           product = vantor_prod,
           service = "WMTS",
@@ -593,15 +585,15 @@ main_server <- function(input, output, session) {
           group = "Vantor Vivid",
           layerId = "vantor_base",
           verbose = FALSE
-        ) %>%
+        ) |>
         vantorr::add_vantor_seamlines(
           product = vantor_prod,
           mode = "wms",
           api_key = map_key,
           group = "Vantor Seamlines",
           verbose = FALSE
-        ) %>%
-        leaflet::hideGroup("Vantor Seamlines") %>%
+        ) |>
+        leaflet::hideGroup("Vantor Seamlines") |>
         leaflet::addPolygons(
           data = lga.sel,
           layerId = "bounds",
@@ -611,11 +603,11 @@ main_server <- function(input, output, session) {
           fillColor = "#FF0000",
           fillOpacity = 0.1,
           options = leaflet::pathOptions(interactive = FALSE, clickable = FALSE)
-        ) %>%
+        ) |>
         leaflet::fitBounds(
           lng1 = bb[1], lat1 = bb[2],
           lng2 = bb[3], lat2 = bb[4]
-        ) %>%
+        ) |>
         leaflet::addLayersControl(
           baseGroups = c("Vantor Vivid"),
           overlayGroups = c("Vantor Seamlines"),
@@ -623,11 +615,11 @@ main_server <- function(input, output, session) {
         )
 
       if (!is.null(tmp.points_sf)) {
-        map <- map %>%
+        map <- map |>
           leaflet::addMarkers(data = tmp.points_sf, group = "house")
       }
 
-      map %>% add_marker_drawing()
+      map |> add_marker_drawing()
     })
   } else {
     output$detailSampMap <- googleway::renderGoogle_map({
@@ -642,7 +634,7 @@ main_server <- function(input, output, session) {
         event_return_type = "list",
         map_type = "satellite",
         libraries = c("visualization", "geometry", "places")
-      ) %>%
+      ) |>
         googleway::add_polygons(
           data = lga.sel,
           layer_id = "bounds",
@@ -651,11 +643,11 @@ main_server <- function(input, output, session) {
         )
 
       if (!is.null(tmp.points_sf)) {
-        map <- map %>%
+        map <- map |>
           googleway::add_markers(data = tmp.points_sf, layer_id = "house")
       }
 
-      map %>% add_marker_drawing()
+      map |> add_marker_drawing()
     })
   }
   shiny::outputOptions(output, "detailSampMap", suspendWhenHidden = FALSE)
@@ -690,10 +682,10 @@ main_server <- function(input, output, session) {
 
     if (identical(provider, "vantor")) {
       bb <- as.numeric(sf::st_bbox(lga.sel))
-      upd <- leaflet::leafletProxy("detailSampMap", session = session) %>%
-        clear_marker_drawing() %>%
-        leaflet::clearGroup("bounds") %>%
-        leaflet::clearGroup("house") %>%
+      upd <- leaflet::leafletProxy("detailSampMap", session = session) |>
+        clear_marker_drawing() |>
+        leaflet::clearGroup("bounds") |>
+        leaflet::clearGroup("house") |>
         leaflet::addPolygons(
           data = lga.sel,
           layerId = "bounds",
@@ -703,22 +695,22 @@ main_server <- function(input, output, session) {
           fillColor = "#FF0000",
           fillOpacity = 0.1,
           options = leaflet::pathOptions(interactive = FALSE, clickable = FALSE)
-        ) %>%
+        ) |>
         leaflet::fitBounds(
           lng1 = bb[1], lat1 = bb[2],
           lng2 = bb[3], lat2 = bb[4]
         )
 
       if (!is.null(tmp.points_sf)) {
-        upd <- upd %>%
+        upd <- upd |>
           leaflet::addMarkers(data = tmp.points_sf, group = "house")
       }
-      upd %>% add_marker_drawing()
+      upd |> add_marker_drawing()
     } else {
-      upd <- googleway::google_map_update(map_id = "detailSampMap") %>%
-        clear_marker_drawing() %>%
-        googleway::clear_polygons(layer_id = "bounds") %>%
-        googleway::clear_markers(layer_id = "house") %>%
+      upd <- googleway::google_map_update(map_id = "detailSampMap") |>
+        clear_marker_drawing() |>
+        googleway::clear_polygons(layer_id = "bounds") |>
+        googleway::clear_markers(layer_id = "house") |>
         googleway::add_polygons(
           data = lga.sel,
           layer_id = "bounds",
@@ -727,10 +719,10 @@ main_server <- function(input, output, session) {
         )
 
       if (!is.null(tmp.points_sf)) {
-        upd <- upd %>%
+        upd <- upd |>
           googleway::add_markers(data = tmp.points_sf, layer_id = "house")
       }
-      upd %>% add_marker_drawing()
+      upd |> add_marker_drawing()
     }
   }, ignoreInit = TRUE)
 
@@ -747,7 +739,7 @@ main_server <- function(input, output, session) {
       easyClose = TRUE
     ))
     curr_fp <- fp()
-    fn <- stringr::str_replace_all(as.character(tmp.areaID), "[!@#$%^&*/\\\\]*", "")
+    fn <- gsub("[!@#$%^&*/\\\\]*", "", as.character(tmp.areaID))
     if (!dir.exists(curr_fp)) {
       dir.create(curr_fp, recursive = TRUE, showWarnings = FALSE)
     }
@@ -761,12 +753,12 @@ main_server <- function(input, output, session) {
       data.table::data.table(long = numeric(0), lat = numeric(0), area_id = character(0))
     )
     if (identical(provider, "vantor")) {
-      leaflet::leafletProxy("detailSampMap", session = session) %>%
-        clear_marker_drawing() %>%
+      leaflet::leafletProxy("detailSampMap", session = session) |>
+        clear_marker_drawing() |>
         leaflet::clearGroup("house")
     } else {
-      googleway::google_map_update(map_id = "detailSampMap") %>%
-        clear_marker_drawing() %>%
+      googleway::google_map_update(map_id = "detailSampMap") |>
+        clear_marker_drawing() |>
         googleway::clear_markers(layer_id = "house")
     }
     areaRefreshTrigger(areaRefreshTrigger() + 1L)
@@ -791,7 +783,7 @@ main_server <- function(input, output, session) {
     }
     dir.create(temp.dir, recursive = TRUE, showWarnings = FALSE)
 
-    ts_str <- stringr::str_remove_all(format(Sys.time(), "%Y%m%d_%H%M%S"), "[^0-9_]")
+    ts_str <- gsub("[^0-9_]", "", format(Sys.time(), "%Y%m%d_%H%M%S"))
     fs <- character(2)
     fs[1] <- file.path(temp.dir, paste0("AreaswithMarker-", ts_str, ".csv"))
     fs[2] <- file.path(temp.dir, paste0("AllAreas-", ts_str, ".csv"))
@@ -814,8 +806,8 @@ main_server <- function(input, output, session) {
       message = "Preparing data for download",
       value = 0,
       {
-        readr::write_csv(point_files, fs[1])
-        readr::write_csv(tmp.shp, fs[2])
+        data.table::fwrite(point_files, fs[1])
+        data.table::fwrite(tmp.shp, fs[2])
         shiny::incProgress(1 / 2)
         zip::zip(zipfile = fs.zip, files = fs, mode = "cherry-pick")
         dwlFile(fs.zip)

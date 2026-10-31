@@ -118,13 +118,13 @@ suso_map_idSRV <- function(id,
           )
         ),
         selection = "none"
-      ) %>%
+      ) |>
         DT::formatStyle(
           1,
           fontWeight = "bold",
           textAlign = "center",
           color = "#1976D2"
-        ) %>%
+        ) |>
         DT::formatStyle(
           2,
           fontWeight = "bold",
@@ -216,13 +216,13 @@ suso_map_idSRV <- function(id,
           )
         ),
         selection = "none"
-      ) %>%
+      ) |>
         DT::formatStyle(
           1,
           fontWeight = "bold",
           textAlign = "center",
           color = "#1976D2"
-        ) %>%
+        ) |>
         DT::formatStyle(
           2,
           fontWeight = "bold",

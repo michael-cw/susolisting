@@ -17,7 +17,6 @@ NULL
 if (getRversion() >= "3.3.0") {
   utils::globalVariables(c(
     ".",
-    ".data",
     "area_id",
     "coverage_pct",
     "coverage_status",
