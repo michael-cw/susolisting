@@ -42,10 +42,11 @@ test_that("runListingAppServer returns a valid shiny.appobj without mutating glo
   expect_equal(getOption("susolisting.provider"), "initial_sentinel")
 
   expect_no_warning({
-    app_m <- runListingAppServer(admuser = "admin", admpass = "secret", provider = "maxar")
+    app_m <- runListingAppServer(admuser = "admin", admpass = "secret", provider = "maxar", n_grid = 15L)
   })
   expect_s3_class(app_m, "shiny.appobj")
   expect_equal(getOption("susolisting.provider"), "initial_sentinel")
+  expect_error(runListingAppServer(n_grid = 0L), "`n_grid` must be a positive integer")
 })
 
 test_that("UI modules construct valid Shiny tag objects", {

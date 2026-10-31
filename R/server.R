@@ -369,7 +369,7 @@ main_server <- function(input, output, session) {
     cov_res <- calculate_polygon_coverage(
       polygon_sf = poly_sel,
       points_df = points,
-      n_grid = 20L,
+      n_grid = resolve_n_grid(),
       low_threshold = 20
     )
     points[, coverage_pct := cov_res$coverage_pct]

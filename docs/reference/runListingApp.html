@@ -54,7 +54,8 @@ Please make sure you have read the documentation on how to use the app at
 <span>  launch.browser <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  admuser <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  admpass <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  provider <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"google"</span>, <span class="st">"vantor"</span>, <span class="st">"maxar"</span><span class="op">)</span></span>
+<span>  provider <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"google"</span>, <span class="st">"vantor"</span>, <span class="st">"maxar"</span><span class="op">)</span>,</span>
+<span>  n_grid <span class="op">=</span> <span class="fl">10L</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -83,6 +84,12 @@ function to call with the application's URL.</p></dd>
 <code>"vantor"</code> / <code>"maxar"</code> (uses <code>leaflet</code> and <code>vantorr</code> with Vantor/Maxar API
 credentials).</p></dd>
 
+
+<dt id="arg-n-grid">n_grid<a class="anchor" aria-label="anchor" href="#arg-n-grid"></a></dt>
+<dd><p>Integer specifying the number of grid cells along each axis
+used for the spatial polygon coverage check (default <code>10L</code>, producing a
+<code>10 x 10</code> spatial grid).</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
@@ -104,7 +111,7 @@ survey units within each cluster.</p>
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/interactive.html" class="external-link">interactive</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span></span>
 <span class="r-in"><span>  <span class="fu">runListingApp</span><span class="op">(</span><span class="op">)</span></span></span>
-<span class="r-in"><span>  <span class="fu">runListingApp</span><span class="op">(</span>provider <span class="op">=</span> <span class="st">"vantor"</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="fu">runListingApp</span><span class="op">(</span>provider <span class="op">=</span> <span class="st">"vantor"</span>, n_grid <span class="op">=</span> <span class="fl">10L</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span></span></span>
 <span class="r-in"><span></span></span>
 </code></pre></div>

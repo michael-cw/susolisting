@@ -8,7 +8,8 @@ runListingApp(
   launch.browser = TRUE,
   admuser = NULL,
   admpass = NULL,
-  provider = c("google", "vantor", "maxar")
+  provider = c("google", "vantor", "maxar"),
+  n_grid = 10L
 )
 }
 \arguments{
@@ -25,6 +26,10 @@ function to call with the application's URL.}
 \code{"google"} (default, uses \code{googleway} and a Google Maps API key) or
 \code{"vantor"} / \code{"maxar"} (uses \code{leaflet} and \code{vantorr} with Vantor/Maxar API
 credentials).}
+
+\item{n_grid}{Integer specifying the number of grid cells along each axis
+used for the spatial polygon coverage check (default \code{10L}, producing a
+\verb{10 x 10} spatial grid).}
 }
 \value{
 No return value, called for side effects (launches the interactive
@@ -47,7 +52,7 @@ survey units within each cluster.
 \examples{
 if (interactive()) {
   runListingApp()
-  runListingApp(provider = "vantor")
+  runListingApp(provider = "vantor", n_grid = 10L)
 }
 
 }

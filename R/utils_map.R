@@ -509,6 +509,25 @@ suso_drawing_js <- function() {
     "))
 }
 
+#' Resolve and validate the spatial grid resolution (`n_grid`)
+#'
+#' @param n_grid Integer specifying the number of grid divisions along each axis.
+#'   If `NULL`, reads `getOption("susolisting.n_grid", 10L)`.
+#'
+#' @return Positive integer giving the grid dimension along each axis.
+#' @noRd
+#' @keywords internal
+resolve_n_grid <- function(n_grid = NULL) {
+  if (is.null(n_grid) || length(n_grid) == 0L || is.na(n_grid[1])) {
+    n_grid <- getOption("susolisting.n_grid", 10L)
+  }
+  n_grid <- suppressWarnings(as.integer(n_grid[1]))
+  if (is.na(n_grid) || n_grid < 1L) {
+    stop("`n_grid` must be a positive integer.", call. = FALSE)
+  }
+  n_grid
+}
+
 #' Calculate spatial grid coverage of a polygon by point locations
 #'
 #' @description Partitions an Enumeration Area (EA) polygon into a regular
@@ -523,7 +542,8 @@ suso_drawing_js <- function() {
 #' @param points_df A `data.frame`, `data.table`, or `sf` object of point
 #'   locations containing longitude and latitude coordinates.
 #' @param n_grid Integer specifying the number of grid divisions along each axis
-#'   (default `20L`, producing a `20 x 20` spatial grid clipped to the polygon).
+#'   (default `getOption("susolisting.n_grid", 10L)`, producing a `10 x 10`
+#'   spatial grid clipped to the polygon).
 #' @param low_threshold Numeric percentage threshold below which an area is
 #'   flagged as having low coverage (default `20`).
 #'
@@ -538,8 +558,9 @@ suso_drawing_js <- function() {
 #' @keywords internal
 calculate_polygon_coverage <- function(polygon_sf = NULL,
                                        points_df = NULL,
-                                       n_grid = 20L,
+                                       n_grid = getOption("susolisting.n_grid", 10L),
                                        low_threshold = 20) {
+  n_grid <- resolve_n_grid(n_grid)
   if (is.null(points_df) || nrow(points_df) == 0L) {
     return(list(
       coverage_pct = 0,
@@ -640,7 +661,7 @@ calculate_polygon_coverage <- function(polygon_sf = NULL,
 #' @param frame_df A `data.frame` or `data.table` of listed building points.
 #' @param cluster_var Character string naming the cluster / EA column.
 #' @param n_grid Integer grid dimension passed to [calculate_polygon_coverage()]
-#'   (default `20L`).
+#'   (default `getOption("susolisting.n_grid", 10L)`).
 #' @param low_threshold Numeric percentage threshold below which a cluster is
 #'   flagged as `"LOW"` (default `20`).
 #'
@@ -650,8 +671,9 @@ calculate_polygon_coverage <- function(polygon_sf = NULL,
 #' @keywords internal
 summarize_cluster_coverage <- function(frame_df,
                                        cluster_var = "ea",
-                                       n_grid = 20L,
+                                       n_grid = getOption("susolisting.n_grid", 10L),
                                        low_threshold = 20) {
+  n_grid <- resolve_n_grid(n_grid)
   df <- if (inherits(frame_df, "sf")) {
     as.data.frame(sf::st_set_geometry(frame_df, NULL))
   } else {

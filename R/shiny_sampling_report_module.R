@@ -798,12 +798,14 @@ build_sampling_report_docx <- function(frame_data,
     stringsAsFactors = FALSE
   )
   doc <- add_wbg_table(doc, frame_summary_df)
+  n_grid_val <- resolve_n_grid()
   doc <- officer::body_add_par(
     doc,
-    paste0(
-      "Source: Compiled enumerator building listing records (cluster variable: `",
+    sprintf(
+      "Source: Compiled enumerator building listing records (cluster variable: `%s`). Spatial coverage is computed on a %dx%d planar UTM grid clipped to each polygon boundary.",
       frame_cluster_var,
-      "`). Spatial coverage is computed on a 20x20 planar UTM grid clipped to each polygon boundary."
+      n_grid_val,
+      n_grid_val
     ),
     style = "WBG Caption"
   )

@@ -10,6 +10,9 @@
 #'   `"google"` (default, uses `googleway` and a Google Maps API key) or
 #'   `"vantor"` / `"maxar"` (uses `leaflet` and `vantorr` with Vantor/Maxar API
 #'   credentials).
+#' @param n_grid Integer specifying the number of grid cells along each axis
+#'   used for the spatial polygon coverage check (default `10L`, producing a
+#'   `10 x 10` spatial grid).
 #'
 #' @details
 #' This function is designed for deployment on Shiny Server. Create an `app.R`
@@ -31,8 +34,10 @@
 #' @export
 runListingAppServer <- function(admuser = NULL,
                                 admpass = NULL,
-                                provider = c("google", "vantor", "maxar")) {
+                                provider = c("google", "vantor", "maxar"),
+                                n_grid = 10L) {
   provider <- resolve_map_provider(provider)
+  n_grid <- resolve_n_grid(n_grid)
   shiny::addResourcePath("www", system.file("www", package = "susolisting"))
 
   changeoptions <- function() {
@@ -41,7 +46,8 @@ runListingAppServer <- function(admuser = NULL,
       spinner.color.background = "#0d47a1",
       admuser = admuser,
       admpass = admpass,
-      susolisting.provider = provider
+      susolisting.provider = provider,
+      susolisting.n_grid = n_grid
     )
     shiny::shinyOptions(shiny.maxRequestSize = 5000 * 1024^2)
 

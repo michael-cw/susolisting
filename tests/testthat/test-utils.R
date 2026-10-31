@@ -125,30 +125,31 @@ test_that("calculate_polygon_coverage and summarize_cluster_coverage compute gri
     crs = 4326
   )
 
-  # Empty points -> 0% and flagged LOW
+  # Empty points -> 0% and flagged LOW (default n_grid = 10 -> 100 cells)
   cov_empty <- calculate_polygon_coverage(poly, data.frame(long = numeric(0), lat = numeric(0)))
   expect_equal(cov_empty$coverage_pct, 0)
-  expect_equal(cov_empty$n_cells_total, 400L)
+  expect_equal(cov_empty$n_cells_total, 100L)
   expect_true(cov_empty$low_coverage)
   expect_equal(cov_empty$coverage_status, "LOW")
 
   # Sparse points in one corner -> < 20% and flagged LOW
   pts_sparse <- data.frame(long = c(10.005, 10.008), lat = c(50.005, 50.008))
-  cov_sparse <- calculate_polygon_coverage(poly, pts_sparse, n_grid = 20L, low_threshold = 20)
+  cov_sparse <- calculate_polygon_coverage(poly, pts_sparse, n_grid = 10L, low_threshold = 20)
   expect_gt(cov_sparse$coverage_pct, 0)
   expect_lt(cov_sparse$coverage_pct, 20)
   expect_true(cov_sparse$low_coverage)
   expect_equal(cov_sparse$coverage_status, "LOW")
 
-  # Dense points across the 20x20 grid -> > 80% and status OK
+  # Dense points across the 10x10 grid -> > 80% and status OK
   pts_dense <- expand.grid(
-    long = seq(10.002, 10.098, length.out = 20),
-    lat = seq(50.002, 50.098, length.out = 20)
+    long = seq(10.005, 10.095, length.out = 10),
+    lat = seq(50.005, 50.095, length.out = 10)
   )
-  cov_dense <- calculate_polygon_coverage(poly, pts_dense, n_grid = 20L, low_threshold = 20)
+  cov_dense <- calculate_polygon_coverage(poly, pts_dense, n_grid = 10L, low_threshold = 20)
   expect_gte(cov_dense$coverage_pct, 80)
   expect_false(cov_dense$low_coverage)
   expect_equal(cov_dense$coverage_status, "OK")
+  expect_error(resolve_n_grid(0L), "`n_grid` must be a positive integer")
 
   # Summarize across multiple clusters
   frame_df <- rbind(
