@@ -33,22 +33,6 @@
 #'   runListingApp(provider = "vantor", n_grid = 10L)
 #' }
 #'
-#' @rawNamespace import(shiny, except=c(dataTableOutput, renderDataTable))
-#' @import shinydashboard
-#' @import DT
-#' @import googleway
-#' @importFrom leaflet addLayersControl addMarkers addPolygons clearGroup fitBounds hideGroup invokeMethod layersControlOptions leaflet leafletOptions leafletOutput leafletProxy pathOptions renderLeaflet
-#' @importFrom vantorr add_vantor_basemap add_vantor_seamlines vantor_auth vantor_has_auth
-#' @importFrom data.table as.IDate data.table as.data.table as.ITime copy fwrite setnames setorderv tstrsplit rbindlist
-#' @importFrom shinyjs show runjs
-#' @importFrom fst read_fst write_fst
-#' @importFrom shinyalert shinyalert
-#' @importFrom sf st_area st_as_sf st_bbox st_buffer st_convex_hull st_crs st_geometry st_intersection st_intersects st_is_empty st_is_longlat st_make_grid st_make_valid st_set_geometry st_transform st_union
-#' @importFrom waiter spin_fading_circles useWaiter waiter_show waiter_hide
-#' @importFrom graphics barplot grid legend par text
-#' @importFrom grDevices dev.off png
-#' @importFrom stats ave median runif sd setNames
-#' @importFrom utils packageVersion
 #' @export
 runListingApp <- function(launch.browser = TRUE,
                           admuser = NULL,

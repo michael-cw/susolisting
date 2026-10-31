@@ -9,7 +9,6 @@
 #' @return A `shiny.tag.list` object containing the main-panel UI elements.
 #' @noRd
 #' @keywords internal
-#' @importFrom shiny NS tagList
 mapadminUI_st2 <- function(id) {
   ns <- shiny::NS(id)
   shiny::tagList(
@@ -199,7 +198,6 @@ mapadminUI_st2 <- function(id) {
 #' @return A `shiny.tag.list` object containing the sidebar UI elements.
 #' @noRd
 #' @keywords internal
-#' @importFrom shiny NS tagList
 mapadminUI2_st2 <- function(id) {
   ns <- shiny::NS(id)
   shiny::tagList(
@@ -261,7 +259,6 @@ mapadminUI2_st2 <- function(id) {
 #' @param pointsfile Reactive expression returning the sampled points `data.table`.
 #'
 #' @return A list of reactives: `apiCheck`, `susoServer`, and `susoWS`.
-#' @importFrom shiny NS tagList
 #' @noRd
 #' @keywords internal
 mapadminSRV_st2 <- function(id, pointsfile = shiny::reactive({ NULL })) {
