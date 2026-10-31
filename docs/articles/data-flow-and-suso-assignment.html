@@ -115,6 +115,16 @@ Initialization<a class="anchor" aria-label="anchor" href="#stage-1-spatial-bound
 </td>
 </tr>
 <tr class="even">
+<td align="left"><strong>Coverage Grid Resolution</strong></td>
+<td align="left"><code>resolve_n_grid()</code></td>
+<td align="left">
+<code>n_grid = 10L</code> (default <code>10 x 10</code>
+grid)</td>
+<td align="left">Sets
+<code>options(susolisting.n_grid = ...)</code>
+</td>
+</tr>
+<tr class="odd">
 <td align="left"><strong>Boundary Upload</strong></td>
 <td align="left"><code>shapeLoad2()</code></td>
 <td align="left">
@@ -125,13 +135,13 @@ Initialization<a class="anchor" aria-label="anchor" href="#stage-1-spatial-bound
 <code>sf</code> polygon object transformed to
 <code>EPSG:4326</code> (<code>boundaryFile()</code>)</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left"><strong>Cluster Identifier</strong></td>
 <td align="left"><code>areaIDs()</code></td>
 <td align="left">User-selected column (<code>input$area_id</code>)</td>
 <td align="left">Validated vector of unique EA identifiers</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left"><strong>Map Canvas</strong></td>
 <td align="left">
 <code><a href="https://rdrr.io/pkg/googleway/man/google_map.html" class="external-link">googleway::google_map()</a></code> or
@@ -148,8 +158,8 @@ Initialization<a class="anchor" aria-label="anchor" href="#stage-1-spatial-bound
 <hr>
 </div>
 <div class="section level3">
-<h3 id="stage-2-building-enumeration-incremental--fst-persistence">Stage 2: Building Enumeration &amp; Incremental <code>.fst</code>
-Persistence<a class="anchor" aria-label="anchor" href="#stage-2-building-enumeration-incremental--fst-persistence"></a>
+<h3 id="stage-2-building-enumeration-spatial-coverage-check-incremental--fst-persistence">Stage 2: Building Enumeration, Spatial Coverage Check &amp;
+Incremental <code>.fst</code> Persistence<a class="anchor" aria-label="anchor" href="#stage-2-building-enumeration-spatial-coverage-check-incremental--fst-persistence"></a>
 </h3>
 <p>As an enumerator clicks building rooftops inside the active EA
 boundary (<code>lgaSel()</code>), the browser’s custom drawing handler
@@ -164,12 +174,44 @@ placed markers for the active Enumeration Area in a
 <pre><code><span><span class="fu">long</span> <span class="op">(</span><span class="va">numeric</span><span class="op">)</span> <span class="op">|</span> <span class="fu">lat</span> <span class="op">(</span><span class="va">numeric</span><span class="op">)</span> <span class="op">|</span> <span class="fu">area_id</span> <span class="op">(</span><span class="va">character</span><span class="op">)</span></span></code></pre>
 </li>
 <li>
+<p><strong>Spatial Grid Coverage Check
+(<code>calculate_polygon_coverage()</code>)</strong>: Whenever the
+enumerator clicks <strong>Next</strong> (<code>input$loadNextEA</code>)
+or <strong>Download Locations</strong>
+(<code>input$downloadActivate</code>),
+<code>persist_area_points()</code> evaluates the spatial distribution of
+saved points across the active EA polygon (<code>lgaSel()</code>):</p>
+<ul>
+<li>Both the polygon and the collected building coordinates are
+projected into planar UTM meters via <code>project_to_utm()</code>.</li>
+<li>An <code>n_grid x n_grid</code> regular spatial grid
+(<code>10 x 10</code> cells by default, configured via
+<code>n_grid</code>) is generated over the polygon with
+<code><a href="https://rdrr.io/pkg/sf/man/st_make_grid.html" class="external-link">sf::st_make_grid()</a></code> and filtered to the
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>G</mi><mtext mathvariant="normal">polygon</mtext></msub><annotation encoding="application/x-tex">G_{\text{polygon}}</annotation></semantics></math>
+grid cells that intersect the polygon interior
+(<code><a href="https://rdrr.io/pkg/sf/man/geos_binary_pred.html" class="external-link">sf::st_intersects()</a></code>).</li>
+<li>The coverage percentage is computed from the number of polygon grid
+cells
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>G</mi><mtext mathvariant="normal">occupied</mtext></msub><annotation encoding="application/x-tex">G_{\text{occupied}}</annotation></semantics></math>
+that contain at least one listed building:
+<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mtext mathvariant="normal">Coverage (%)</mtext><mo>=</mo><mfrac><msub><mi>G</mi><mtext mathvariant="normal">occupied</mtext></msub><msub><mi>G</mi><mtext mathvariant="normal">polygon</mtext></msub></mfrac><mo>×</mo><mn>100</mn></mrow><annotation encoding="application/x-tex">\text{Coverage (\%)} = \frac{G_{\text{occupied}}}{G_{\text{polygon}}} \times 100</annotation></semantics></math>
+</li>
+<li>Polygons with <code>&lt; 20%</code> spatial coverage are flagged
+(<code>coverage_status = "LOW"</code>,
+<code>low_coverage = TRUE</code>), triggering a warning notification in
+the UI and highlighting the cluster status in bold red in the sidebar
+<strong>AreaSummary</strong> table (<code>ID</code>,
+<code>Listed Units</code>, <code>Coverage</code>,
+<code>Status</code>).</li>
+</ul>
+</li>
+<li>
 <p><strong>On-Disk Persistence
-(<code>persist_area_points()</code>)</strong>: Whenever the enumerator
-clicks <strong>Next</strong> (<code>input$loadNextEA</code>) or
-<strong>Download Locations</strong>
-(<code>input$downloadActivate</code>), the collected points are merged
-with any existing points for that EA and written to disk in fast binary
+(<code>persist_area_points()</code>)</strong>: The merged building
+coordinates and coverage attributes (<code>long</code>,
+<code>lat</code>, <code>area_id</code>, <code>coverage_pct</code>,
+<code>coverage_status</code>) are written to disk in fast binary
 <code>.fst</code> format:</p>
 <pre><code>&lt;app_download_dir&gt;/&lt;sanitized_user&gt;_&lt;shapefile_name&gt;/area_&lt;clean_id&gt;.fst</code></pre>
 </li>
@@ -189,11 +231,21 @@ Sampling<a class="anchor" aria-label="anchor" href="#stage-3-multi-enumerator-fr
 <code>modal_spsample2stage_server()</code>):</p>
 <ol style="list-style-type: decimal">
 <li>
-<strong>Frame Compilation (<code>dt_frame()</code>)</strong>: All
+<strong>Frame Compilation &amp; Coverage Backfilling
+(<code>dt_frame()</code> &amp;
+<code>summarize_cluster_coverage()</code>)</strong>: All
 <code>area_*.fst</code> files across all
 <code>&lt;user&gt;_&lt;shapefile&gt;</code> folders are read and bound
-via <code>data.table::rbindlist(..., idcol = "ea")</code>, sorted by
-<code>c("ea", "long", "lat")</code>.</li>
+via <code>data.table::rbindlist(..., idcol = "ea", fill = TRUE)</code>,
+sorted by <code>c("ea", "long", "lat")</code>. If any legacy
+<code>.fst</code> files lack <code>coverage_pct</code>,
+<code>calculate_polygon_coverage(polygon_sf = NULL, ...)</code>
+automatically backfills coverage using a buffered convex hull of the
+cluster’s points. Cluster-level coverage is aggregated via
+<code>summarize_cluster_coverage()</code> and displayed in the
+<strong>Frame Summary</strong> table
+(<code>Average Area Coverage (%)</code> and
+<code>Low-Coverage Segments (&lt;20%)</code>).</li>
 <li>
 <strong>Dynamic UTM Projection
 (<code>project_to_utm()</code>)</strong>: Before calling
@@ -237,9 +289,10 @@ coordinates in decimal degrees</li>
 zipped CSV sample download, the sampling module provides a dedicated
 <code>officer</code>-powered reporting module
 (<code>R/shiny_sampling_report_module.R</code>) that generates a World
-Bank Group-styled <code>.docx</code> report documenting the frame, the
-spatial sampling process and parameters, and the resulting sample
-diagnostics.</li>
+Bank Group-styled <code>.docx</code> report documenting the frame,
+spatial grid coverage diagnostics and low-coverage cluster alerts, the
+spatial sampling process and parameters, and the resulting cluster-level
+sample and coverage tables.</li>
 </ol>
 <hr>
 </div>

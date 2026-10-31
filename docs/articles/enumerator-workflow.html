@@ -101,11 +101,15 @@ credentials:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/michael-cw/susolisting" class="external-link">susolisting</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Option A: Use Google Maps satellite imagery (default)</span></span>
-<span><span class="fu"><a href="../reference/runListingApp.html">runListingApp</a></span><span class="op">(</span>provider <span class="op">=</span> <span class="st">"google"</span><span class="op">)</span></span>
+<span><span class="co"># Option A: Use Google Maps satellite imagery (default, 10x10 spatial coverage grid)</span></span>
+<span><span class="fu"><a href="../reference/runListingApp.html">runListingApp</a></span><span class="op">(</span>provider <span class="op">=</span> <span class="st">"google"</span>, n_grid <span class="op">=</span> <span class="fl">10L</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Option B: Use Vantor / Maxar Vivid satellite imagery via leaflet + vantorr</span></span>
-<span><span class="fu"><a href="../reference/runListingApp.html">runListingApp</a></span><span class="op">(</span>provider <span class="op">=</span> <span class="st">"vantor"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="../reference/runListingApp.html">runListingApp</a></span><span class="op">(</span>provider <span class="op">=</span> <span class="st">"vantor"</span>, n_grid <span class="op">=</span> <span class="fl">10L</span><span class="op">)</span></span></code></pre></div>
+<p>The <code>n_grid</code> parameter (default <code>10L</code>) controls
+the resolution of the spatial polygon coverage check
+(<code>10 x 10</code> grid cells) performed when saving each Enumeration
+Area’s building markers.</p>
 <div class="section level3">
 <h3 id="start-up-authentication-dialog">Start-Up Authentication Dialog<a class="anchor" aria-label="anchor" href="#start-up-authentication-dialog"></a>
 </h3>
@@ -227,11 +231,12 @@ inspect map overlays without accidentally placing a marker.</li>
 <ul>
 <li>Automatically saves all markers placed in the current Enumeration
 Area to disk as <code>area_&lt;ID&gt;.fst</code> inside your user
-folder, clears the temporary marker buffer, and zooms the map to the
-next Enumeration Area polygon.</li>
+folder, runs the <strong>spatial polygon coverage check</strong>
+(<code>calculate_polygon_coverage()</code>), clears the temporary marker
+buffer, and zooms the map to the next Enumeration Area polygon.</li>
 <li>When you reach the final Enumeration Area in the shapefile, clicking
-<strong>Next</strong> saves the current area’s markers and displays a
-confirmation notification.</li>
+<strong>Next</strong> saves the current area’s markers, updates its
+spatial coverage metrics, and displays a confirmation notification.</li>
 </ul>
 </li>
 <li>
@@ -264,6 +269,46 @@ cluster from scratch.</li>
 </ul>
 </li>
 </ul>
+</div>
+<div class="section level3">
+<h3 id="spatial-grid-coverage-check-areasummary">Spatial Grid Coverage Check (<code>AreaSummary</code>)<a class="anchor" aria-label="anchor" href="#spatial-grid-coverage-check-areasummary"></a>
+</h3>
+<p>Whenever building markers for an Enumeration Area are saved by
+clicking <strong>Next</strong> (or <strong>Download Locations</strong>),
+<code>susolisting</code> evaluates how thoroughly the polygon area has
+been covered by point locations:</p>
+<ol style="list-style-type: decimal">
+<li>
+<strong>Grid Overlay</strong>: The active Enumeration Area polygon
+and its saved building coordinates are projected into planar UTM
+coordinates (meters), and an <code>n_grid x n_grid</code> spatial grid
+(<code>10 x 10</code> cells by default, configurable via
+<code>n_grid</code> in <code><a href="../reference/runListingApp.html">runListingApp()</a></code>) is constructed over
+the polygon’s bounding box and clipped to the cells intersecting the
+polygon interior.</li>
+<li>
+<strong>Coverage Percentage &amp; Flagging</strong>: The application
+calculates the percentage of polygon grid cells that contain at least
+one marked building (<code>coverage_pct</code>). Areas with coverage
+below <strong>20%</strong> are flagged with status
+<strong><code>LOW</code></strong>, while areas at or above 20% receive
+status <strong><code>OK</code></strong>.</li>
+<li>
+<strong>Sidebar Summary &amp; Low-Coverage Alert</strong>:
+<ul>
+<li>The sidebar <strong>Area Summary</strong> table displays four
+columns for the active cluster: <strong><code>ID</code></strong>,
+<strong><code>Listed Units</code></strong>,
+<strong><code>Coverage</code></strong> (e.g., <code>45.0%</code>), and
+color-coded <strong><code>Status</code></strong>
+(<strong><code>OK</code></strong> in green,
+<strong><code>LOW</code></strong> in bold red).</li>
+<li>If saving an area results in <code>&lt; 20%</code> spatial coverage,
+a warning notification alerts the enumerator to verify that all sections
+of the polygon have been listed.</li>
+</ul>
+</li>
+</ol>
 <hr>
 </div>
 </div>
@@ -275,7 +320,8 @@ cluster from scratch.</li>
 <strong>Controls</strong> sidebar is enabled:</p>
 <ol style="list-style-type: decimal">
 <li>Clicking <strong>Download Locations</strong> first saves any unsaved
-markers from the currently active Enumeration Area.</li>
+markers from the currently active Enumeration Area (computing its
+spatial coverage metrics).</li>
 <li>It compiles all <code>area_&lt;ID&gt;.fst</code> files from your
 session folder into a single <code>.zip</code> archive named
 <code>BuildingFrame-&lt;YYYY-MM-DD_HH-MM-SS&gt;.zip</code> containing
@@ -284,7 +330,9 @@ two CSV files:
 <li>
 <code>AreaswithMarker-&lt;timestamp&gt;.csv</code>: Every marked
 building coordinate (<code>long</code>, <code>lat</code>,
-<code>area_id</code>).</li>
+<code>area_id</code>) along with the cluster’s spatial coverage
+percentage (<code>coverage_pct</code>) and status
+(<code>coverage_status</code>).</li>
 <li>
 <code>AllAreas-&lt;timestamp&gt;.csv</code>: The attribute table of
 all Enumeration Areas from the uploaded boundary shapefile.</li>

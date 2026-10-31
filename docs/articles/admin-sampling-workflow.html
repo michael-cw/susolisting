@@ -102,18 +102,20 @@ download button, start the application with <code>admuser</code> and
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/michael-cw/susolisting" class="external-link">susolisting</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Interactive session with Google Maps (default)</span></span>
+<span><span class="co"># Interactive session with Google Maps (default, 10x10 spatial coverage grid)</span></span>
 <span><span class="fu"><a href="../reference/runListingApp.html">runListingApp</a></span><span class="op">(</span></span>
 <span>  admuser <span class="op">=</span> <span class="st">"survey_admin"</span>,</span>
 <span>  admpass <span class="op">=</span> <span class="st">"your_secure_password"</span>,</span>
-<span>  provider <span class="op">=</span> <span class="st">"google"</span></span>
+<span>  provider <span class="op">=</span> <span class="st">"google"</span>,</span>
+<span>  n_grid <span class="op">=</span> <span class="fl">10L</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Interactive session with Vantor / Maxar imagery</span></span>
 <span><span class="fu"><a href="../reference/runListingApp.html">runListingApp</a></span><span class="op">(</span></span>
 <span>  admuser <span class="op">=</span> <span class="st">"survey_admin"</span>,</span>
 <span>  admpass <span class="op">=</span> <span class="st">"your_secure_password"</span>,</span>
-<span>  provider <span class="op">=</span> <span class="st">"vantor"</span></span>
+<span>  provider <span class="op">=</span> <span class="st">"vantor"</span>,</span>
+<span>  n_grid <span class="op">=</span> <span class="fl">10L</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>On a <strong>Shiny Server</strong> deployment, place the following in
 <code>app.R</code>:</p>
@@ -122,7 +124,8 @@ download button, start the application with <code>admuser</code> and
 <span><span class="fu">susolisting</span><span class="fu">::</span><span class="fu"><a href="../reference/runListingAppServer.html">runListingAppServer</a></span><span class="op">(</span></span>
 <span>  admuser <span class="op">=</span> <span class="st">"survey_admin"</span>,</span>
 <span>  admpass <span class="op">=</span> <span class="st">"your_secure_password"</span>,</span>
-<span>  provider <span class="op">=</span> <span class="st">"google"</span></span>
+<span>  provider <span class="op">=</span> <span class="st">"google"</span>,</span>
+<span>  n_grid <span class="op">=</span> <span class="fl">10L</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <div class="section level3">
 <h3 id="collecting-enumerator-files">Collecting Enumerator Files<a class="anchor" aria-label="anchor" href="#collecting-enumerator-files"></a>
@@ -179,8 +182,16 @@ reporting the exact number of <strong>user directories</strong> and
 <li>Click <strong>Generate the frame</strong> to confirm.</li>
 <li>All <code>.fst</code> files are combined into a single
 <code>data.table</code> ordered by Enumeration Area (<code>ea</code>),
-longitude (<code>long</code>), and latitude (<code>lat</code>), and the
-<strong>Frame Summary</strong> table appears in the sidebar:
+longitude (<code>long</code>), and latitude (<code>lat</code>) using
+<code>data.table::rbindlist(..., fill = TRUE)</code>. If any legacy
+<code>.fst</code> files without spatial coverage columns
+(<code>coverage_pct</code>, <code>coverage_status</code>) are
+encountered, <code>susolisting</code> automatically computes and
+backfills their spatial coverage using an <code>n_grid x n_grid</code>
+spatial grid (<code>10 x 10</code> by default) over each cluster’s
+buffered convex hull.</li>
+<li>Once compiled, the <strong>Frame Summary</strong> table appears in
+the sidebar:
 <ul>
 <li>
 <strong>Number of Segments</strong>: Total distinct Enumeration
@@ -191,6 +202,14 @@ buildings across all segments.</li>
 <li>
 <strong>Average / Minimum / Maximum Population per Segment</strong>:
 Distribution of building counts across clusters.</li>
+<li>
+<strong>Average Area Coverage (<code>%</code>)</strong>: Mean
+spatial grid coverage percentage across all Enumeration Areas
+(<code>summarize_cluster_coverage()</code>).</li>
+<li>
+<strong>Low-Coverage Segments (<code>&lt;20%</code>)</strong>: Count
+of Enumeration Areas flagged with <code>LOW</code> spatial coverage
+(<code>&lt; 20%</code>).</li>
 </ul>
 </li>
 </ol>
@@ -297,9 +316,10 @@ download a Microsoft Word (<code>.docx</code>) report
 (<code>SamplingReport_2stage_&lt;mode&gt;_seed_&lt;seed&gt;.docx</code>)
 created via the <code>officer</code> package and formatted according to
 the World Bank Group Branding and Visual Identity Guidelines (complete
-with the institutional cover logo, frame summary tables, sampling
-methodology and reproducibility parameters, design weight diagnostics,
-and cluster-level allocation charts and tables).</li>
+with the institutional cover logo, frame summary and spatial coverage
+diagnostics, low-coverage cluster callout alerts, sampling methodology
+and reproducibility parameters, design weight diagnostics, and
+cluster-level allocation and coverage tables).</li>
 <li>Alternatively, proceed directly to the <strong>SuSo</strong> tab to
 push assignments to your Survey Solutions server.</li>
 </ol>

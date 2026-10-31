@@ -32,13 +32,14 @@ knitr::include_graphics("figures/data-flow-diagram.png")
 | Component | Function / Object | Input Format | Output / State |
 |:---|:---|:---|:---|
 | **Provider Resolution** | `resolve_map_provider()` | `provider = "google"` or `"vantor"` (`"maxar"`) | Sets `options(susolisting.provider = ...)` |
+| **Coverage Grid Resolution** | `resolve_n_grid()` | `n_grid = 10L` (default `10 x 10` grid) | Sets `options(susolisting.n_grid = ...)` |
 | **Boundary Upload** | `shapeLoad2()` | `.zip` containing `.shp`, `.shx`, `.dbf`, `.prj` | `sf` polygon object transformed to `EPSG:4326` (`boundaryFile()`) |
 | **Cluster Identifier** | `areaIDs()` | User-selected column (`input$area_id`) | Validated vector of unique EA identifiers |
 | **Map Canvas** | `googleway::google_map()` or `leaflet::leaflet()` + `vantorr::add_vantor_basemap()` | Google API key or Vantor WMTS/WMS API key | Interactive satellite map zoomed to `lgaSel()` |
 
 ---
 
-### Stage 2: Building Enumeration & Incremental `.fst` Persistence
+### Stage 2: Building Enumeration, Spatial Coverage Check & Incremental `.fst` Persistence
 
 As an enumerator clicks building rooftops inside the active EA boundary (`lgaSel()`), the browser's custom drawing handler (`suso_drawing_js()`) places a marker and emits `input$detailSampMap_markercomplete`:
 
@@ -47,12 +48,19 @@ As an enumerator clicks building rooftops inside the active EA boundary (`lgaSel
    ```
    long (numeric) | lat (numeric) | area_id (character)
    ```
-2. **On-Disk Persistence (`persist_area_points()`)**:
-   Whenever the enumerator clicks **Next** (`input$loadNextEA`) or **Download Locations** (`input$downloadActivate`), the collected points are merged with any existing points for that EA and written to disk in fast binary `.fst` format:
+2. **Spatial Grid Coverage Check (`calculate_polygon_coverage()`)**:
+   Whenever the enumerator clicks **Next** (`input$loadNextEA`) or **Download Locations** (`input$downloadActivate`), `persist_area_points()` evaluates the spatial distribution of saved points across the active EA polygon (`lgaSel()`):
+   - Both the polygon and the collected building coordinates are projected into planar UTM meters via `project_to_utm()`.
+   - An `n_grid x n_grid` regular spatial grid (`10 x 10` cells by default, configured via `n_grid`) is generated over the polygon with `sf::st_make_grid()` and filtered to the $G_{\text{polygon}}$ grid cells that intersect the polygon interior (`sf::st_intersects()`).
+   - The coverage percentage is computed from the number of polygon grid cells $G_{\text{occupied}}$ that contain at least one listed building:
+     $$\text{Coverage (\%)} = \frac{G_{\text{occupied}}}{G_{\text{polygon}}} \times 100$$
+   - Polygons with `< 20%` spatial coverage are flagged (`coverage_status = "LOW"`, `low_coverage = TRUE`), triggering a warning notification in the UI and highlighting the cluster status in bold red in the sidebar **AreaSummary** table (`ID`, `Listed Units`, `Coverage`, `Status`).
+3. **On-Disk Persistence (`persist_area_points()`)**:
+   The merged building coordinates and coverage attributes (`long`, `lat`, `area_id`, `coverage_pct`, `coverage_status`) are written to disk in fast binary `.fst` format:
    ```
    <app_download_dir>/<sanitized_user>_<shapefile_name>/area_<clean_id>.fst
    ```
-3. **Individual Archive Export (`BuildingFrame-<timestamp>.zip`)**:
+4. **Individual Archive Export (`BuildingFrame-<timestamp>.zip`)**:
    When downloaded in local mode, the `.fst` files are combined into `AreaswithMarker-<timestamp>.csv` alongside the polygon attribute table `AllAreas-<timestamp>.csv`.
 
 ---
@@ -61,8 +69,8 @@ As an enumerator clicks building rooftops inside the active EA boundary (`lgaSel
 
 In administrator mode (`modal_adminspsample_server()` and `modal_spsample2stage_server()`):
 
-1. **Frame Compilation (`dt_frame()`)**:
-   All `area_*.fst` files across all `<user>_<shapefile>` folders are read and bound via `data.table::rbindlist(..., idcol = "ea")`, sorted by `c("ea", "long", "lat")`.
+1. **Frame Compilation & Coverage Backfilling (`dt_frame()` & `summarize_cluster_coverage()`)**:
+   All `area_*.fst` files across all `<user>_<shapefile>` folders are read and bound via `data.table::rbindlist(..., idcol = "ea", fill = TRUE)`, sorted by `c("ea", "long", "lat")`. If any legacy `.fst` files lack `coverage_pct`, `calculate_polygon_coverage(polygon_sf = NULL, ...)` automatically backfills coverage using a buffered convex hull of the cluster's points. Cluster-level coverage is aggregated via `summarize_cluster_coverage()` and displayed in the **Frame Summary** table (`Average Area Coverage (%)` and `Low-Coverage Segments (<20%)`).
 2. **Dynamic UTM Projection (`project_to_utm()`)**:
    Before calling `spsurvey`, the WGS84 point frame is converted to an `sf` object and dynamically projected into the appropriate Universal Transverse Mercator (UTM) zone in meters:
    $$\text{Zone} = \left\lfloor \frac{\bar{\lambda} + 180}{6} \right\rfloor + 1$$
@@ -74,7 +82,7 @@ In administrator mode (`modal_adminspsample_server()` and `modal_spsample2stage_
    - `lon_WGS84`, `lat_WGS84`: Geographic coordinates in decimal degrees
    - `wgt`: Design weight ($N_h / n_h$)
 4. **Automated Word Sampling Report (`sampling_report_server()` / `build_sampling_report_docx()`)**:
-   Alongside the zipped CSV sample download, the sampling module provides a dedicated `officer`-powered reporting module (`R/shiny_sampling_report_module.R`) that generates a World Bank Group-styled `.docx` report documenting the frame, the spatial sampling process and parameters, and the resulting sample diagnostics.
+   Alongside the zipped CSV sample download, the sampling module provides a dedicated `officer`-powered reporting module (`R/shiny_sampling_report_module.R`) that generates a World Bank Group-styled `.docx` report documenting the frame, spatial grid coverage diagnostics and low-coverage cluster alerts, the spatial sampling process and parameters, and the resulting cluster-level sample and coverage tables.
 
 ---
 

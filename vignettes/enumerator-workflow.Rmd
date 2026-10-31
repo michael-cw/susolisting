@@ -33,12 +33,14 @@ To launch the application in **individual (local) enumerator mode**, run `runLis
 ```r
 library(susolisting)
 
-# Option A: Use Google Maps satellite imagery (default)
-runListingApp(provider = "google")
+# Option A: Use Google Maps satellite imagery (default, 10x10 spatial coverage grid)
+runListingApp(provider = "google", n_grid = 10L)
 
 # Option B: Use Vantor / Maxar Vivid satellite imagery via leaflet + vantorr
-runListingApp(provider = "vantor")
+runListingApp(provider = "vantor", n_grid = 10L)
 ```
+
+The `n_grid` parameter (default `10L`) controls the resolution of the spatial polygon coverage check (`10 x 10` grid cells) performed when saving each Enumeration Area's building markers.
 
 ### Start-Up Authentication Dialog
 
@@ -93,8 +95,8 @@ In the top-right corner of the map canvas, a two-button control lets you switch 
 ### Navigating Across Enumeration Areas
 
 - **Next (`Next →`)**:
-  - Automatically saves all markers placed in the current Enumeration Area to disk as `area_<ID>.fst` inside your user folder, clears the temporary marker buffer, and zooms the map to the next Enumeration Area polygon.
-  - When you reach the final Enumeration Area in the shapefile, clicking **Next** saves the current area's markers and displays a confirmation notification.
+  - Automatically saves all markers placed in the current Enumeration Area to disk as `area_<ID>.fst` inside your user folder, runs the **spatial polygon coverage check** (`calculate_polygon_coverage()`), clears the temporary marker buffer, and zooms the map to the next Enumeration Area polygon.
+  - When you reach the final Enumeration Area in the shapefile, clicking **Next** saves the current area's markers, updates its spatial coverage metrics, and displays a confirmation notification.
 - **Previous (`← Previous`)**:
   - Returns to the preceding Enumeration Area and reloads any previously saved markers (`house` layer) so you can review or add additional buildings.
   - Note: Once you place a new marker in the active area, the **Previous** button is disabled until you either advance with **Next** (saving the new markers) or click **CLEAR AREA**.
@@ -103,14 +105,24 @@ In the top-right corner of the map canvas, a two-button control lets you switch 
 - **CLEAR AREA**:
   - Removes all saved and unsaved building markers for the currently displayed Enumeration Area (deleting its `area_<ID>.fst` file) so you can re-enumerate the cluster from scratch.
 
+### Spatial Grid Coverage Check (`AreaSummary`)
+
+Whenever building markers for an Enumeration Area are saved by clicking **Next** (or **Download Locations**), `susolisting` evaluates how thoroughly the polygon area has been covered by point locations:
+
+1. **Grid Overlay**: The active Enumeration Area polygon and its saved building coordinates are projected into planar UTM coordinates (meters), and an `n_grid x n_grid` spatial grid (`10 x 10` cells by default, configurable via `n_grid` in `runListingApp()`) is constructed over the polygon's bounding box and clipped to the cells intersecting the polygon interior.
+2. **Coverage Percentage & Flagging**: The application calculates the percentage of polygon grid cells that contain at least one marked building (`coverage_pct`). Areas with coverage below **20%** are flagged with status **`LOW`**, while areas at or above 20% receive status **`OK`**.
+3. **Sidebar Summary & Low-Coverage Alert**:
+   - The sidebar **Area Summary** table displays four columns for the active cluster: **`ID`**, **`Listed Units`**, **`Coverage`** (e.g., `45.0%`), and color-coded **`Status`** (**`OK`** in green, **`LOW`** in bold red).
+   - If saving an area results in `< 20%` spatial coverage, a warning notification alerts the enumerator to verify that all sections of the polygon have been listed.
+
 ---
 
 ## 4. Downloading the Completed Building Frame
 
 When running in individual mode (`admuser = NULL`), the **Download Locations** button at the bottom of the **Controls** sidebar is enabled:
 
-1. Clicking **Download Locations** first saves any unsaved markers from the currently active Enumeration Area.
+1. Clicking **Download Locations** first saves any unsaved markers from the currently active Enumeration Area (computing its spatial coverage metrics).
 2. It compiles all `area_<ID>.fst` files from your session folder into a single `.zip` archive named `BuildingFrame-<YYYY-MM-DD_HH-MM-SS>.zip` containing two CSV files:
-   - `AreaswithMarker-<timestamp>.csv`: Every marked building coordinate (`long`, `lat`, `area_id`).
+   - `AreaswithMarker-<timestamp>.csv`: Every marked building coordinate (`long`, `lat`, `area_id`) along with the cluster's spatial coverage percentage (`coverage_pct`) and status (`coverage_status`).
    - `AllAreas-<timestamp>.csv`: The attribute table of all Enumeration Areas from the uploaded boundary shapefile.
 3. **Important**: After packaging the download archive, the individual `.fst` files in the working folder are flushed. Make sure you have completed all Enumeration Areas in your assignment and verified your downloaded `.zip` file.

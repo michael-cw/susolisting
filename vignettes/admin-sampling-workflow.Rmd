@@ -32,18 +32,20 @@ To enable the administrator modules (**Sample** and **SuSo** tabs) and prevent i
 ```r
 library(susolisting)
 
-# Interactive session with Google Maps (default)
+# Interactive session with Google Maps (default, 10x10 spatial coverage grid)
 runListingApp(
   admuser = "survey_admin",
   admpass = "your_secure_password",
-  provider = "google"
+  provider = "google",
+  n_grid = 10L
 )
 
 # Interactive session with Vantor / Maxar imagery
 runListingApp(
   admuser = "survey_admin",
   admpass = "your_secure_password",
-  provider = "vantor"
+  provider = "vantor",
+  n_grid = 10L
 )
 ```
 
@@ -54,7 +56,8 @@ library(susolisting)
 susolisting::runListingAppServer(
   admuser = "survey_admin",
   admpass = "your_secure_password",
-  provider = "google"
+  provider = "google",
+  n_grid = 10L
 )
 ```
 
@@ -88,10 +91,13 @@ Once verified:
 1. Click **Generate Frame** in the left sidebar.
 2. The application scans all subdirectories inside the `download` folder and displays a confirmation dialog reporting the exact number of **user directories** and **`area_*.fst` files** discovered.
 3. Click **Generate the frame** to confirm.
-4. All `.fst` files are combined into a single `data.table` ordered by Enumeration Area (`ea`), longitude (`long`), and latitude (`lat`), and the **Frame Summary** table appears in the sidebar:
+4. All `.fst` files are combined into a single `data.table` ordered by Enumeration Area (`ea`), longitude (`long`), and latitude (`lat`) using `data.table::rbindlist(..., fill = TRUE)`. If any legacy `.fst` files without spatial coverage columns (`coverage_pct`, `coverage_status`) are encountered, `susolisting` automatically computes and backfills their spatial coverage using an `n_grid x n_grid` spatial grid (`10 x 10` by default) over each cluster's buffered convex hull.
+5. Once compiled, the **Frame Summary** table appears in the sidebar:
    - **Number of Segments**: Total distinct Enumeration Areas compiled.
    - **Total Frame Population**: Total number of listed buildings across all segments.
    - **Average / Minimum / Maximum Population per Segment**: Distribution of building counts across clusters.
+   - **Average Area Coverage (`%`)**: Mean spatial grid coverage percentage across all Enumeration Areas (`summarize_cluster_coverage()`).
+   - **Low-Coverage Segments (`<20%`)**: Count of Enumeration Areas flagged with `LOW` spatial coverage (`< 20%`).
 
 ---
 
@@ -128,5 +134,5 @@ knitr::include_graphics("figures/ui-admin-frame-and-sample.png")
    - **Average, Minimum, and Maximum Sampling Weight (`wgt`)**
    - **Sampling Weight Coefficient of Variation (`Sampling Weight CV`)**
 3. Click **Download Data** to export a `.zip` archive named `SpatSamp_2stage_<mode>_seed_<seed>.zip` containing the sampled units CSV.
-4. Click **Download Sampling Report** to generate and download a Microsoft Word (`.docx`) report (`SamplingReport_2stage_<mode>_seed_<seed>.docx`) created via the `officer` package and formatted according to the World Bank Group Branding and Visual Identity Guidelines (complete with the institutional cover logo, frame summary tables, sampling methodology and reproducibility parameters, design weight diagnostics, and cluster-level allocation charts and tables).
+4. Click **Download Sampling Report** to generate and download a Microsoft Word (`.docx`) report (`SamplingReport_2stage_<mode>_seed_<seed>.docx`) created via the `officer` package and formatted according to the World Bank Group Branding and Visual Identity Guidelines (complete with the institutional cover logo, frame summary and spatial coverage diagnostics, low-coverage cluster callout alerts, sampling methodology and reproducibility parameters, design weight diagnostics, and cluster-level allocation and coverage tables).
 5. Alternatively, proceed directly to the **SuSo** tab to push assignments to your Survey Solutions server.
