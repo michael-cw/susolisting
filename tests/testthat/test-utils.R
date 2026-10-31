@@ -112,3 +112,50 @@ test_that("add_marker_drawing and clear_marker_drawing work on google_map and le
   expect_match(as.character(js_tag), "ensureShinyOutputClasses")
   expect_match(as.character(js_tag), "installLeafletHooks")
 })
+
+test_that("calculate_polygon_coverage and summarize_cluster_coverage compute grid coverage and flag low coverage", {
+  poly <- sf::st_sfc(
+    sf::st_polygon(list(rbind(
+      c(10.0, 50.0),
+      c(10.1, 50.0),
+      c(10.1, 50.1),
+      c(10.0, 50.1),
+      c(10.0, 50.0)
+    ))),
+    crs = 4326
+  )
+
+  # Empty points -> 0% and flagged LOW
+  cov_empty <- calculate_polygon_coverage(poly, data.frame(long = numeric(0), lat = numeric(0)))
+  expect_equal(cov_empty$coverage_pct, 0)
+  expect_true(cov_empty$low_coverage)
+  expect_equal(cov_empty$coverage_status, "LOW")
+
+  # Sparse points in one corner -> < 20% and flagged LOW
+  pts_sparse <- data.frame(long = c(10.005, 10.008), lat = c(50.005, 50.008))
+  cov_sparse <- calculate_polygon_coverage(poly, pts_sparse, n_grid = 5L, low_threshold = 20)
+  expect_gt(cov_sparse$coverage_pct, 0)
+  expect_lt(cov_sparse$coverage_pct, 20)
+  expect_true(cov_sparse$low_coverage)
+  expect_equal(cov_sparse$coverage_status, "LOW")
+
+  # Dense points across all 25 grid cells -> > 80% and status OK
+  pts_dense <- expand.grid(
+    long = seq(10.01, 10.09, length.out = 5),
+    lat = seq(50.01, 50.09, length.out = 5)
+  )
+  cov_dense <- calculate_polygon_coverage(poly, pts_dense, n_grid = 5L, low_threshold = 20)
+  expect_gte(cov_dense$coverage_pct, 80)
+  expect_false(cov_dense$low_coverage)
+  expect_equal(cov_dense$coverage_status, "OK")
+
+  # Summarize across multiple clusters
+  frame_df <- rbind(
+    cbind(ea = "EA_SPARSE", pts_sparse, coverage_pct = cov_sparse$coverage_pct),
+    cbind(ea = "EA_DENSE", pts_dense, coverage_pct = cov_dense$coverage_pct)
+  )
+  sum_df <- summarize_cluster_coverage(frame_df, cluster_var = "ea")
+  expect_equal(nrow(sum_df), 2L)
+  expect_equal(sum_df$coverage_status[sum_df$cluster_id == "EA_SPARSE"], "LOW")
+  expect_equal(sum_df$coverage_status[sum_df$cluster_id == "EA_DENSE"], "OK")
+})

@@ -247,21 +247,28 @@ modal_adminspsample_server <- function(id, side = shiny::reactive(NULL)) {
     output$framesummary <- DT::renderDT({
       dtframe <- shiny::req(dt_frame())
       dtframegr <- dtframe[, .(ean = .N), by = .(ea)]
+      cov_df <- summarize_cluster_coverage(dtframe, cluster_var = "ea")
       tab <- data.table::data.table(
         var = c(
           "Number of Segments",
           "Total Frame Population",
           "Average population per Segment",
           "Minimum Population per Segment",
-          "Maximum Population per Segment"
+          "Maximum Population per Segment",
+          "Average Area Coverage (%)",
+          "Low-Coverage Segments (<20%)"
         ),
-        val = round(c(
-          dplyr::n_distinct(dtframe$ea),
-          nrow(dtframe),
-          mean(dtframegr$ean),
-          min(dtframegr$ean),
-          max(dtframegr$ean)
-        ))
+        val = c(
+          round(c(
+            dplyr::n_distinct(dtframe$ea),
+            nrow(dtframe),
+            mean(dtframegr$ean),
+            min(dtframegr$ean),
+            max(dtframegr$ean)
+          )),
+          round(mean(cov_df$coverage_pct, na.rm = TRUE), 1),
+          sum(cov_df$low_coverage, na.rm = TRUE)
+        )
       )
 
       tab <- DT::datatable(

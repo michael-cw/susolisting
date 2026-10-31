@@ -19,6 +19,8 @@ if (getRversion() >= "3.3.0") {
     ".",
     ".data",
     "area_id",
+    "coverage_pct",
+    "coverage_status",
     "ea",
     "ean",
     "Example",

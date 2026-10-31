@@ -359,6 +359,35 @@ main_server <- function(input, output, session) {
       old_points <- fst::read_fst(fn, as.data.table = TRUE)
       points <- data.table::rbindlist(list(old_points, points), fill = TRUE)
     }
+
+    # Calculate spatial grid coverage against the EA polygon when saving
+    poly_sel <- NULL
+    if (!is.null(boundaryFile()) && !is.null(input$area_id) && input$area_id %in% names(boundaryFile())) {
+      b_shp <- boundaryFile()
+      poly_sel <- b_shp[as.character(b_shp[, input$area_id, drop = TRUE]) == as.character(target_area_id), ]
+    }
+    cov_res <- calculate_polygon_coverage(
+      polygon_sf = poly_sel,
+      points_df = points,
+      n_grid = 5L,
+      low_threshold = 20
+    )
+    points[, coverage_pct := cov_res$coverage_pct]
+    points[, coverage_status := cov_res$coverage_status]
+
+    if (isTRUE(cov_res$low_coverage)) {
+      shiny::showNotification(
+        sprintf(
+          "Low spatial coverage (%.1f%%) detected in Enumeration Area %s (< 20%% threshold). Please verify that all sections of the polygon have been listed.",
+          cov_res$coverage_pct,
+          as.character(target_area_id)
+        ),
+        type = "warning",
+        duration = 8,
+        session = session
+      )
+    }
+
     tryCatch(
       fst::write_fst(points, fn),
       error = function(e) {
@@ -501,16 +530,46 @@ main_server <- function(input, output, session) {
     FP <- fp()
     FPfile <- file.path(FP, paste0("area_", clean_id, ".fst"))
 
+    saved_pts <- NULL
     if (file.exists(FPfile)) {
       lga.sel.point <- fst::read_fst(FPfile, as.data.table = TRUE)
       N_saved <- nrow(lga.sel.point)
       lgaSelPoint(lga.sel.point)
+      saved_pts <- lga.sel.point
     } else {
       N_saved <- 0L
     }
     N_point <- N_saved + nrow(new_pts)
-    tab <- data.table::data.table(ID = id_area, `Listed Units` = N_point)
-    DT::datatable(tab, options = list(dom = "t"), rownames = FALSE)
+
+    # Display persisted coverage from saved .fst file (calculated when clicking Next)
+    if (!is.null(saved_pts) && N_saved > 0L) {
+      if ("coverage_pct" %in% names(saved_pts) && any(!is.na(saved_pts$coverage_pct))) {
+        cov_val <- as.numeric(saved_pts$coverage_pct[!is.na(saved_pts$coverage_pct)])[1]
+        cov_flag <- if (cov_val < 20) "LOW" else "OK"
+      } else {
+        cov_res <- calculate_polygon_coverage(polygon_sf = lga.sel, points_df = saved_pts)
+        cov_val <- cov_res$coverage_pct
+        cov_flag <- cov_res$coverage_status
+      }
+      cov_label <- sprintf("%.1f%%", cov_val)
+    } else {
+      cov_label <- "0.0%"
+      cov_flag <- "LOW"
+    }
+
+    tab <- data.table::data.table(
+      ID = id_area,
+      `Listed Units` = N_point,
+      `Coverage` = cov_label,
+      `Status` = cov_flag
+    )
+    dt_out <- DT::datatable(tab, options = list(dom = "t"), rownames = FALSE)
+    DT::formatStyle(
+      dt_out,
+      "Status",
+      color = DT::styleEqual(c("LOW", "OK"), c("#D32F2F", "#2E7D32")),
+      fontWeight = "bold"
+    )
   })
 
   ##############################################################################

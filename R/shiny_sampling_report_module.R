@@ -221,6 +221,14 @@ build_sampling_report_docx <- function(frame_data,
   n_total_frame <- nrow(frame_df)
   frame_counts_num <- as.numeric(frame_counts_tbl)
 
+  cov_summary <- summarize_cluster_coverage(frame_df, cluster_var = frame_cluster_var)
+  cov_lookup <- stats::setNames(cov_summary$coverage_pct, cov_summary$cluster_id)
+  flag_lookup <- stats::setNames(cov_summary$coverage_status, cov_summary$cluster_id)
+  mean_cov_pct <- mean(cov_summary$coverage_pct, na.rm = TRUE)
+  min_cov_pct <- min(cov_summary$coverage_pct, na.rm = TRUE)
+  n_low_cov <- sum(cov_summary$low_coverage, na.rm = TRUE)
+  low_cov_eas <- cov_summary$cluster_id[cov_summary$low_coverage]
+
   n_sample_clusters <- length(sample_counts_tbl)
   n_total_sample <- nrow(sample_df)
 
@@ -543,7 +551,16 @@ build_sampling_report_docx <- function(frame_data,
       btm_sz <- if (i == nr) "12" else "4"
       row_cells <- character(nc)
       for (j in seq_len(nc)) {
-        val_str <- xml_escape(df_val[[j]][i])
+        raw_val <- as.character(df_val[[j]][i])
+        val_str <- xml_escape(raw_val)
+        cell_text_color <- if (identical(raw_val, "LOW")) {
+          "C62828"
+        } else if (identical(raw_val, "OK")) {
+          "2E7D32"
+        } else {
+          "333333"
+        }
+        cell_bold_tag <- if (raw_val %in% c("LOW", "OK")) "<w:b/><w:bCs/>" else ""
         row_cells[j] <- sprintf(
           paste0(
             "<w:tc>",
@@ -566,7 +583,8 @@ build_sampling_report_docx <- function(frame_data,
             "<w:r>",
             "<w:rPr>",
             "<w:rFonts w:ascii=\"Arial\" w:hAnsi=\"Arial\" w:cs=\"Arial\"/>",
-            "<w:color w:val=\"333333\"/>",
+            "%s",
+            "<w:color w:val=\"%s\"/>",
             "<w:sz w:val=\"19\"/>",
             "<w:szCs w:val=\"19\"/>",
             "</w:rPr>",
@@ -580,6 +598,8 @@ build_sampling_report_docx <- function(frame_data,
           btm_color,
           bg_fill,
           col_align[j],
+          cell_bold_tag,
+          cell_text_color,
           val_str
         )
       }
@@ -666,6 +686,7 @@ build_sampling_report_docx <- function(frame_data,
     c("Random Seed: ", seed_val),
     c("Enumeration Areas in Frame: ", format(n_frame_clusters, big.mark = ",")),
     c("Total Listed Buildings in Frame: ", format(n_total_frame, big.mark = ",")),
+    c("Average Polygon Grid Coverage: ", sprintf("%.1f%% (%d flagged low < 20%%)", mean_cov_pct, n_low_cov)),
     c("Total Selected Sample Units: ", format(n_total_sample, big.mark = ","))
   )
   for (item in cover_meta) {
@@ -757,7 +778,10 @@ build_sampling_report_docx <- function(frame_data,
       "Median Buildings per Enumeration Area",
       "Standard Deviation of Buildings per EA",
       "Minimum Buildings per Enumeration Area",
-      "Maximum Buildings per Enumeration Area"
+      "Maximum Buildings per Enumeration Area",
+      "Average Polygon Spatial Grid Coverage (%)",
+      "Minimum Polygon Spatial Grid Coverage (%)",
+      "Flagged Low-Coverage Enumeration Areas (< 20%)"
     ),
     Value = c(
       format(n_frame_clusters, big.mark = ","),
@@ -766,21 +790,46 @@ build_sampling_report_docx <- function(frame_data,
       sprintf("%.2f", stats::median(frame_counts_num)),
       sprintf("%.2f", if (length(frame_counts_num) > 1) stats::sd(frame_counts_num) else 0),
       format(min(frame_counts_num), big.mark = ","),
-      format(max(frame_counts_num), big.mark = ",")
+      format(max(frame_counts_num), big.mark = ","),
+      sprintf("%.1f%%", mean_cov_pct),
+      sprintf("%.1f%%", min_cov_pct),
+      format(n_low_cov, big.mark = ",")
     ),
     stringsAsFactors = FALSE
   )
   doc <- add_wbg_table(doc, frame_summary_df)
   doc <- officer::body_add_par(
     doc,
-    paste0("Source: Compiled enumerator building listing records (cluster variable: `", frame_cluster_var, "`)."),
+    paste0(
+      "Source: Compiled enumerator building listing records (cluster variable: `",
+      frame_cluster_var,
+      "`). Spatial coverage is computed on a 5x5 planar UTM grid clipped to each polygon boundary."
+    ),
     style = "WBG Caption"
   )
+
+  if (n_low_cov > 0L) {
+    doc <- officer::body_add_fpar(
+      doc,
+      officer::fpar(
+        officer::ftext("Low Spatial Coverage Flag (< 20%): ", prop = fp_label),
+        officer::ftext(
+          sprintf(
+            "%d enumeration area(s) exhibited spatial grid coverage below the 20%% threshold (%s). Please verify whether sparse building coverage reflects true settlement geometry or incomplete listing.",
+            n_low_cov,
+            paste(low_cov_eas, collapse = ", ")
+          ),
+          prop = fp_value
+        )
+      ),
+      style = "WBG Callout"
+    )
+  }
 
   # Table 2: Frame distribution by Enumeration Area
   doc <- officer::body_add_par(
     doc,
-    "Table 2. Listed Building Frame Distribution by Enumeration Area",
+    "Table 2. Listed Building Frame Distribution and Spatial Grid Coverage by Enumeration Area",
     style = "WBG Table Title"
   )
   ea_names <- names(frame_counts_tbl)
@@ -800,11 +849,21 @@ build_sampling_report_docx <- function(frame_data,
       "-"
     }
   }, character(1))
+  ea_cov_str <- vapply(ea_names, function(cl) {
+    val <- cov_lookup[cl]
+    if (!is.na(val)) sprintf("%.1f%%", val) else "-"
+  }, character(1))
+  ea_flag_str <- vapply(ea_names, function(cl) {
+    val <- flag_lookup[cl]
+    if (!is.na(val)) unname(val) else "LOW"
+  }, character(1))
 
   frame_ea_df <- data.frame(
     `Enumeration Area` = ea_names,
     `Listed Buildings (N_h)` = as.integer(frame_counts_num),
     `Share of Frame (%)` = sprintf("%.2f%%", (frame_counts_num / max(1L, n_total_frame)) * 100),
+    `Grid Coverage (%)` = ea_cov_str,
+    `Coverage Status` = ea_flag_str,
     `Longitude Range` = lon_ranges,
     `Latitude Range` = lat_ranges,
     check.names = FALSE,
@@ -1072,9 +1131,20 @@ build_sampling_report_docx <- function(frame_data,
     }
   }, character(1))
 
+  alloc_cov_str <- vapply(all_clusters, function(cl) {
+    val <- cov_lookup[cl]
+    if (!is.na(val)) sprintf("%.1f%%", val) else "-"
+  }, character(1))
+  alloc_flag_str <- vapply(all_clusters, function(cl) {
+    val <- flag_lookup[cl]
+    if (!is.na(val)) unname(val) else "LOW"
+  }, character(1))
+
   cluster_alloc_df <- data.frame(
     `Enumeration Area` = all_clusters,
     `Frame Size (N_h)` = as.integer(frame_by_cl),
+    `Grid Coverage (%)` = alloc_cov_str,
+    `Coverage Status` = alloc_flag_str,
     `Sample Size (n_h)` = as.integer(samp_by_cl),
     `Sampling Rate (%)` = sprintf("%.2f%%", ifelse(frame_by_cl > 0, (samp_by_cl / frame_by_cl) * 100, 0)),
     `Design Weight (w_h)` = wgt_by_cl,
