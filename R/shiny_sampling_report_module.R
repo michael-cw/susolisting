@@ -803,7 +803,7 @@ build_sampling_report_docx <- function(frame_data,
     paste0(
       "Source: Compiled enumerator building listing records (cluster variable: `",
       frame_cluster_var,
-      "`). Spatial coverage is computed on a 5x5 planar UTM grid clipped to each polygon boundary."
+      "`). Spatial coverage is computed on a 20x20 planar UTM grid clipped to each polygon boundary."
     ),
     style = "WBG Caption"
   )
