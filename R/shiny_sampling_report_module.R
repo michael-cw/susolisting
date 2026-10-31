@@ -972,7 +972,7 @@ build_sampling_report_docx <- function(frame_data,
       mindist_val,
       seed_val,
       utm_epsg_val,
-      "WGS84Geographic (EPSG:4326)",
+      "WGS84 Geographic (EPSG:4326)",
       paste0("spsurvey v", spsurvey_ver)
     ),
     stringsAsFactors = FALSE
@@ -1071,32 +1071,35 @@ build_sampling_report_docx <- function(frame_data,
 
   tmp_plot <- tempfile(fileext = ".png")
   on.exit(unlink(tmp_plot), add = TRUE)
-  grDevices::png(filename = tmp_plot, width = 6.2, height = 3.4, units = "in", res = 300)
-  graphics::par(mar = c(6, 4.5, 2.5, 1.5), family = "sans", cex.axis = 0.8)
-  y_max <- max(plot_mat, na.rm = TRUE) * 1.22
-  graphics::barplot(
-    plot_mat,
-    beside = TRUE,
-    col = c(wbg_navy, wbg_cyan),
-    border = NA,
-    ylim = c(0, max(1, y_max)),
-    las = 2,
-    cex.names = 0.8,
-    ylab = "Number of Buildings",
-    main = "Frame vs. Sampled Buildings by Enumeration Area",
-    col.main = wbg_navy,
-    col.lab = wbg_text
-  )
-  graphics::grid(nx = NA, ny = NULL, col = "#D9E2EC", lty = "dotted")
-  graphics::legend(
-    "topright",
-    legend = c("Listed Frame (N_h)", "Selected Sample (n_h)"),
-    fill = c(wbg_navy, wbg_cyan),
-    border = NA,
-    bty = "n",
-    cex = 0.85
-  )
-  grDevices::dev.off()
+  local({
+    grDevices::png(filename = tmp_plot, width = 6.2, height = 3.4, units = "in", res = 300)
+    on.exit(grDevices::dev.off(), add = TRUE)
+    old_par <- graphics::par(mar = c(6, 4.5, 2.5, 1.5), family = "sans", cex.axis = 0.8)
+    on.exit(graphics::par(old_par), add = TRUE, after = FALSE)
+    y_max <- max(plot_mat, na.rm = TRUE) * 1.22
+    graphics::barplot(
+      plot_mat,
+      beside = TRUE,
+      col = c(wbg_navy, wbg_cyan),
+      border = NA,
+      ylim = c(0, max(1, y_max)),
+      las = 2,
+      cex.names = 0.8,
+      ylab = "Number of Buildings",
+      main = "Frame vs. Sampled Buildings by Enumeration Area",
+      col.main = wbg_navy,
+      col.lab = wbg_text
+    )
+    graphics::grid(nx = NA, ny = NULL, col = "#D9E2EC", lty = "dotted")
+    graphics::legend(
+      "topright",
+      legend = c("Listed Frame (N_h)", "Selected Sample (n_h)"),
+      fill = c(wbg_navy, wbg_cyan),
+      border = NA,
+      bty = "n",
+      cex = 0.85
+    )
+  })
 
   doc <- officer::body_add_img(
     doc,

@@ -119,7 +119,7 @@ knitr::include_graphics("figures/ui-admin-frame-and-sample.png")
    - **`Balanced` (Generalized Random Tessellation Stratified - GRTS)**:
      Draws a spatially balanced sample within each Enumeration Area using `spsurvey::grts()`. This ensures sampled buildings are well-distributed across the geography of each cluster rather than clumped in one corner.
    - **`Balanced w. minimum distance`**:
-     Enables the **Minimum distance in m** (`mindist`) numeric input. Prior to sampling, `susolisting` automatically projects the WGS84 coordinates into the appropriate UTM zone (`EPSG:326xx` or `EPSG:327xx` in meters) via `project_to_utm()` and passes `mindis` to `spsurvey::grts()` so no two sampled buildings are closer than the specified threshold ( when feasible).
+     Enables the **Minimum distance in m** (`mindist`) numeric input. Prior to sampling, `susolisting` automatically projects the WGS84 coordinates into the appropriate UTM zone (`EPSG:326xx` or `EPSG:327xx` in meters) via `project_to_utm()` and passes `mindis` to `spsurvey::grts()` so no two sampled buildings are closer than the specified threshold (when feasible).
    - **`Random` (Independent Random Sample - IRS)**:
      Draws an equal-probability simple random sample within each cluster using `spsurvey::irs()`.
 4. **Cluster Sample Size (`n_sample`)**:

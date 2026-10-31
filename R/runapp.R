@@ -46,6 +46,7 @@
 #' @importFrom sf st_area st_as_sf st_bbox st_buffer st_convex_hull st_crs st_geometry st_intersection st_intersects st_is_empty st_is_longlat st_make_grid st_make_valid st_set_geometry st_transform st_union
 #' @importFrom waiter spin_fading_circles useWaiter waiter_show waiter_hide
 #' @importFrom graphics barplot grid legend par text
+#' @importFrom grDevices dev.off png
 #' @importFrom stats ave median runif sd setNames
 #' @importFrom utils packageVersion
 #' @export
