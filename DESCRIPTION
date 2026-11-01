@@ -1,5 +1,5 @@
 Package: susolisting
-Title: 'Shiny' Application for Enumeration Area Listing on Satellite Imagery
+Title: 'Shiny' Application for Enumeration Area Listing
 Version: 0.2.0
 Authors@R: 
     person("Michael", "Wild", , "mwild@worldbank.org", role = c("aut", "cre"))
