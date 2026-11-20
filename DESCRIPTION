@@ -2,7 +2,7 @@ Package: susolisting
 Title: 'Shiny' Application for Enumeration Area Listing
 Version: 0.2.0
 Authors@R: 
-    person("Michael", "Wild", , "mwild@worldbank.org", role = c("aut", "cre"))
+    person("Michael", "Wild", , "michael.wild@me.com", role = c("aut", "cre"))
 Description: Interactive 'Shiny' application to mark buildings on 'Google Maps'
     or 'Vantor' ('Maxar') satellite imagery within user-provided enumeration
     area (EA) boundaries. Reads boundary polygons in 'ESRI' shapefile format,

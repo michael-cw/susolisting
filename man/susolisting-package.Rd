@@ -18,7 +18,7 @@ Useful links:
 
 }
 \author{
-\strong{Maintainer}: Michael Wild \email{mwild@worldbank.org}
+\strong{Maintainer}: Michael Wild \email{michael.wild@me.com}
 
 }
 \keyword{internal}
