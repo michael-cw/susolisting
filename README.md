@@ -76,7 +76,7 @@ when using `provider = "vantor"`.
 1.  Install R: <https://CRAN.R-project.org/mirrors.html> (version 4.1.0
     or greater)
 
-2.  Install RStudio: <https://posit.co/downloads/>
+2.  Install RStudio: <https://posit.co/downloads>
 
 3.  Make sure the `devtools` package is installed, if not install it
     with:
