@@ -1,8 +1,7 @@
 #' Shiny module UI for downloading the Word sampling report
 #'
 #' @description Renders an action button and hidden download handler to generate
-#' and download a Microsoft Word (`.docx`) sampling report styled according to
-#' the World Bank Group Branding and Visual Identity Guidelines.
+#' and download a formatted Microsoft Word (`.docx`) sampling report.
 #'
 #' @param id Character string specifying the module namespace ID.
 #' @param label Character string for the report download button label.
@@ -115,37 +114,67 @@ sampling_report_server <- function(id,
   })
 }
 
-#' Resolve the path to the World Bank logo image (`logoWBDG.png`)
+#' Resolve the path to the sampling report cover logo image
 #'
-#' @param logo_path Optional explicit file path to the logo PNG.
+#' @param logo_path Optional explicit file path to a custom logo PNG. If `NULL`,
+#'   checks `getOption("susolisting.logo_path")` and falls back to the built-in
+#'   package logo (`inst/www/susospatial.png`).
 #'
-#' @return Character string giving an existing path to `logoWBDG.png`, or `""`
+#' @return Character string giving an existing path to the logo PNG, or `""`
 #'   if not found.
 #' @noRd
 #' @keywords internal
-resolve_wbg_logo_path <- function(logo_path = NULL) {
+resolve_report_logo_path <- function(logo_path = NULL) {
+  if (is.null(logo_path) || !nzchar(logo_path)) {
+    logo_path <- getOption("susolisting.logo_path")
+  }
   if (!is.null(logo_path) && nzchar(logo_path) && file.exists(logo_path)) {
     return(logo_path)
   }
-  pkg_logo <- system.file("www", "logoWBDG.png", package = "susolisting")
+  pkg_logo <- system.file("www", "susospatial.png", package = "susolisting")
   if (nzchar(pkg_logo) && file.exists(pkg_logo)) {
     return(pkg_logo)
   }
-  local_logo <- file.path("inst", "www", "logoWBDG.png")
+  local_logo <- file.path("inst", "www", "susospatial.png")
   if (file.exists(local_logo)) {
     return(local_logo)
   }
   ""
 }
 
-#' Build a World Bank-styled Word (`.docx`) sampling report using `officer`
+#' Compute width/height aspect ratio of a PNG file from its IHDR header
+#'
+#' @param path Character string giving the path to a PNG image file.
+#'
+#' @return Numeric aspect ratio (`width / height`), defaulting to `518 / 600`.
+#' @noRd
+#' @keywords internal
+get_png_aspect_ratio <- function(path) {
+  default_ar <- 518 / 600
+  if (is.null(path) || !nzchar(path) || !file.exists(path)) {
+    return(default_ar)
+  }
+  raw_bytes <- tryCatch(
+    readBin(path, what = "raw", n = 24L),
+    error = function(e) raw(0)
+  )
+  if (length(raw_bytes) < 24L || !identical(as.integer(raw_bytes[1:4]), c(137L, 80L, 78L, 71L))) {
+    return(default_ar)
+  }
+  w <- sum(as.numeric(as.integer(raw_bytes[17:20])) * c(16777216, 65536, 256, 1))
+  h <- sum(as.numeric(as.integer(raw_bytes[21:24])) * c(16777216, 65536, 256, 1))
+  if (is.na(w) || is.na(h) || w <= 0 || h <= 0) {
+    return(default_ar)
+  }
+  w / h
+}
+
+#' Build a formatted Word (`.docx`) sampling report using `officer`
 #'
 #' @description Creates a comprehensive Microsoft Word report documenting the
 #' second-stage building listing frame, the spatial sampling methodology and
-#' parameters, and the resulting sample. Styled in accordance with the World
-#' Bank Group Branding and Visual Identity Guidelines (Primary Solid Blue
-#' `#002244`, Accent Cyan `#009FDA`, Arial typography, and `logoWBDG.png` on the
-#' front cover page).
+#' parameters, and the resulting sample, with formatted tables, design weight
+#' diagnostics, and an optional cover logo (`susospatial.png` by default).
 #'
 #' @param frame_data A `data.frame` or `data.table` containing the second-stage
 #'   sampling frame of listed buildings.
@@ -155,7 +184,7 @@ resolve_wbg_logo_path <- function(logo_path = NULL) {
 #'   `clustervar`, `seed`, `samplemode`, `n_sample`, `mindist`, `utm_epsg`, and
 #'   `timestamp`. Missing fields are inferred automatically from the data.
 #' @param file Character string specifying the output `.docx` file path.
-#' @param logo_path Optional explicit file path to `logoWBDG.png`.
+#' @param logo_path Optional explicit file path to a cover logo PNG image.
 #'
 #' @return Invisibly returns the path `file` to the generated `.docx` document.
 #' @noRd
@@ -286,20 +315,19 @@ build_sampling_report_docx <- function(frame_data,
     format(Sys.time(), "%Y-%m-%d %H:%M:%S %Z")
   }
 
-  # World Bank Group Branding & Visual Identity Guidelines Palette (Feb 2016)
-  # Primary Solid Blue (PMS 289): #002244 | Accent Bright Cyan: #009FDA
-  wbg_navy <- "#002244"
-  wbg_cyan <- "#009FDA"
-  wbg_text <- "#333333"
-  wbg_muted <- "#666666"
-  wbg_tint <- "#EBF4FA"
+  # Report color palette: Primary Navy (#002244) and Accent Cyan (#009FDA)
+  rpt_navy <- "#002244"
+  rpt_cyan <- "#009FDA"
+  rpt_text <- "#333333"
+  rpt_muted <- "#666666"
+  rpt_tint <- "#EBF4FA"
 
   doc <- officer::read_docx()
   doc <- officer::set_doc_properties(
     doc,
     title = "Second-Stage Spatial Sampling Report",
     subject = "Enumeration Area Building Listing and Second-Stage Sample Documentation",
-    creator = "World Bank Group - Development Data Group / JDC (susolisting)"
+    creator = "susolisting"
   )
   doc <- officer::body_set_default_section(
     doc,
@@ -308,14 +336,14 @@ build_sampling_report_docx <- function(frame_data,
     )
   )
 
-  # Register custom World Bank Group paragraph styles
+  # Register custom report paragraph styles
   doc <- officer::docx_set_paragraph_style(
     doc,
-    style_id = "WBGCoverCategory",
-    style_name = "WBG Cover Category",
+    style_id = "ReportCoverCategory",
+    style_name = "Report Cover Category",
     fp_p = officer::fp_par(padding.top = 18, padding.bottom = 4),
     fp_t = officer::fp_text_lite(
-      color = wbg_cyan,
+      color = rpt_cyan,
       font.size = 10,
       bold = TRUE,
       font.family = "Arial"
@@ -323,11 +351,11 @@ build_sampling_report_docx <- function(frame_data,
   )
   doc <- officer::docx_set_paragraph_style(
     doc,
-    style_id = "WBGCoverTitle",
-    style_name = "WBG Cover Title",
+    style_id = "ReportCoverTitle",
+    style_name = "Report Cover Title",
     fp_p = officer::fp_par(padding.top = 4, padding.bottom = 6),
     fp_t = officer::fp_text_lite(
-      color = wbg_navy,
+      color = rpt_navy,
       font.size = 24,
       bold = TRUE,
       font.family = "Arial"
@@ -335,15 +363,15 @@ build_sampling_report_docx <- function(frame_data,
   )
   doc <- officer::docx_set_paragraph_style(
     doc,
-    style_id = "WBGCoverSubtitle",
-    style_name = "WBG Cover Subtitle",
+    style_id = "ReportCoverSubtitle",
+    style_name = "Report Cover Subtitle",
     fp_p = officer::fp_par(
       padding.top = 2,
       padding.bottom = 14,
-      border.bottom = officer::fp_border(color = wbg_cyan, width = 2.5)
+      border.bottom = officer::fp_border(color = rpt_cyan, width = 2.5)
     ),
     fp_t = officer::fp_text_lite(
-      color = wbg_cyan,
+      color = rpt_cyan,
       font.size = 13,
       bold = FALSE,
       font.family = "Arial"
@@ -351,16 +379,16 @@ build_sampling_report_docx <- function(frame_data,
   )
   doc <- officer::docx_set_paragraph_style(
     doc,
-    style_id = "WBGHeading1",
-    style_name = "WBG Heading 1",
+    style_id = "ReportHeading1",
+    style_name = "Report Heading 1",
     fp_p = officer::fp_par(
       padding.top = 14,
       padding.bottom = 4,
-      border.bottom = officer::fp_border(color = wbg_cyan, width = 1.5),
+      border.bottom = officer::fp_border(color = rpt_cyan, width = 1.5),
       keep_with_next = TRUE
     ),
     fp_t = officer::fp_text_lite(
-      color = wbg_navy,
+      color = rpt_navy,
       font.size = 14,
       bold = TRUE,
       font.family = "Arial"
@@ -368,15 +396,15 @@ build_sampling_report_docx <- function(frame_data,
   )
   doc <- officer::docx_set_paragraph_style(
     doc,
-    style_id = "WBGHeading2",
-    style_name = "WBG Heading 2",
+    style_id = "ReportHeading2",
+    style_name = "Report Heading 2",
     fp_p = officer::fp_par(
       padding.top = 10,
       padding.bottom = 3,
       keep_with_next = TRUE
     ),
     fp_t = officer::fp_text_lite(
-      color = wbg_cyan,
+      color = rpt_cyan,
       font.size = 11.5,
       bold = TRUE,
       font.family = "Arial"
@@ -384,48 +412,48 @@ build_sampling_report_docx <- function(frame_data,
   )
   doc <- officer::docx_set_paragraph_style(
     doc,
-    style_id = "WBGBody",
-    style_name = "WBG Body",
+    style_id = "ReportBody",
+    style_name = "Report Body",
     fp_p = officer::fp_par(
       padding.top = 2,
       padding.bottom = 6,
       line_spacing = 1.15
     ),
     fp_t = officer::fp_text_lite(
-      color = wbg_text,
+      color = rpt_text,
       font.size = 10,
       font.family = "Arial"
     )
   )
   doc <- officer::docx_set_paragraph_style(
     doc,
-    style_id = "WBGCallout",
-    style_name = "WBG Callout",
+    style_id = "ReportCallout",
+    style_name = "Report Callout",
     fp_p = officer::fp_par(
       padding.top = 5,
       padding.bottom = 5,
       padding.left = 10,
       padding.right = 10,
-      shading.color = wbg_tint,
-      border.left = officer::fp_border(color = wbg_cyan, width = 3)
+      shading.color = rpt_tint,
+      border.left = officer::fp_border(color = rpt_cyan, width = 3)
     ),
     fp_t = officer::fp_text_lite(
-      color = wbg_navy,
+      color = rpt_navy,
       font.size = 10,
       font.family = "Arial"
     )
   )
   doc <- officer::docx_set_paragraph_style(
     doc,
-    style_id = "WBGTableTitle",
-    style_name = "WBG Table Title",
+    style_id = "ReportTableTitle",
+    style_name = "Report Table Title",
     fp_p = officer::fp_par(
       padding.top = 8,
       padding.bottom = 3,
       keep_with_next = TRUE
     ),
     fp_t = officer::fp_text_lite(
-      color = wbg_navy,
+      color = rpt_navy,
       font.size = 10,
       bold = TRUE,
       font.family = "Arial"
@@ -433,11 +461,11 @@ build_sampling_report_docx <- function(frame_data,
   )
   doc <- officer::docx_set_paragraph_style(
     doc,
-    style_id = "WBGCaption",
-    style_name = "WBG Caption",
+    style_id = "ReportCaption",
+    style_name = "Report Caption",
     fp_p = officer::fp_par(padding.top = 3, padding.bottom = 8),
     fp_t = officer::fp_text_lite(
-      color = wbg_muted,
+      color = rpt_muted,
       font.size = 8.5,
       italic = TRUE,
       font.family = "Arial"
@@ -445,13 +473,13 @@ build_sampling_report_docx <- function(frame_data,
   )
 
   fp_label <- officer::fp_text_lite(
-    color = wbg_navy,
+    color = rpt_navy,
     font.size = 10,
     bold = TRUE,
     font.family = "Arial"
   )
   fp_value <- officer::fp_text_lite(
-    color = wbg_text,
+    color = rpt_text,
     font.size = 10,
     font.family = "Arial"
   )
@@ -467,7 +495,7 @@ build_sampling_report_docx <- function(frame_data,
     x
   }
 
-  add_wbg_table <- function(doc_obj, df_val, col_widths = NULL, col_align = NULL) {
+  add_report_table <- function(doc_obj, df_val, col_widths = NULL, col_align = NULL) {
     nc <- ncol(df_val)
     nr <- nrow(df_val)
     total_dxa <- 9648L # 6.7 inches in dxa (8.5in page width minus 2 * 0.9in margins)
@@ -636,16 +664,23 @@ build_sampling_report_docx <- function(frame_data,
   # ============================================================================
   # FRONT COVER PAGE
   # ============================================================================
-  resolved_logo <- resolve_wbg_logo_path(logo_path)
+  resolved_logo <- resolve_report_logo_path(logo_path)
   if (nzchar(resolved_logo)) {
+    logo_ar <- get_png_aspect_ratio(resolved_logo)
+    logo_h <- 1.25
+    logo_w <- round(logo_h * logo_ar, 2)
+    if (logo_w > 2.8) {
+      logo_w <- 2.8
+      logo_h <- round(logo_w / logo_ar, 2)
+    }
     doc <- officer::body_add_fpar(
       doc,
       officer::fpar(
-        officer::external_img(src = resolved_logo, width = 2.8, height = 0.71),
+        officer::external_img(src = resolved_logo, width = logo_w, height = logo_h),
         fp_p = officer::fp_par(
           padding.top = 6,
           padding.bottom = 12,
-          border.bottom = officer::fp_border(color = wbg_navy, width = 1.5)
+          border.bottom = officer::fp_border(color = rpt_navy, width = 1.5)
         )
       )
     )
@@ -654,17 +689,17 @@ build_sampling_report_docx <- function(frame_data,
   doc <- officer::body_add_par(
     doc,
     "SURVEY SOLUTIONS SPATIAL SAMPLING & LISTING SUITE",
-    style = "WBG Cover Category"
+    style = "Report Cover Category"
   )
   doc <- officer::body_add_par(
     doc,
     "Second-Stage Spatial Sampling Report",
-    style = "WBG Cover Title"
+    style = "Report Cover Title"
   )
   doc <- officer::body_add_par(
     doc,
     "Enumeration Area Building Listing, Sampling Process, and Selected Sample Documentation",
-    style = "WBG Cover Subtitle"
+    style = "Report Cover Subtitle"
   )
 
   doc <- officer::body_add_par(
@@ -674,7 +709,7 @@ build_sampling_report_docx <- function(frame_data,
       "the spatial sampling methodology and parameters applied, and the resulting sample ",
       "of survey units drawn across enumeration areas."
     ),
-    style = "WBG Body"
+    style = "Report Body"
   )
 
   cover_meta <- list(
@@ -696,17 +731,17 @@ build_sampling_report_docx <- function(frame_data,
         officer::ftext(item[1], prop = fp_label),
         officer::ftext(item[2], prop = fp_value)
       ),
-      style = "WBG Callout"
+      style = "Report Callout"
     )
   }
 
   doc <- officer::body_add_par(
     doc,
     paste0(
-      "Prepared with the World Bank Group / JDC Survey Solutions Spatial Listing Application ",
+      "Prepared with the Survey Solutions Spatial Listing Application ",
       "(susolisting v", as.character(utils::packageVersion("susolisting")), ")."
     ),
-    style = "WBG Caption"
+    style = "Report Caption"
   )
 
   doc <- officer::body_add_break(doc)
@@ -714,7 +749,7 @@ build_sampling_report_docx <- function(frame_data,
   # ============================================================================
   # 1. EXECUTIVE SUMMARY
   # ============================================================================
-  doc <- officer::body_add_par(doc, "1. Executive Summary", style = "WBG Heading 1")
+  doc <- officer::body_add_par(doc, "1. Executive Summary", style = "Report Heading 1")
   doc <- officer::body_add_par(
     doc,
     sprintf(
@@ -732,7 +767,7 @@ build_sampling_report_docx <- function(frame_data,
       seed_val,
       target_n
     ),
-    style = "WBG Body"
+    style = "Report Body"
   )
   doc <- officer::body_add_fpar(
     doc,
@@ -746,13 +781,13 @@ build_sampling_report_docx <- function(frame_data,
         prop = fp_value
       )
     ),
-    style = "WBG Callout"
+    style = "Report Callout"
   )
 
   # ============================================================================
   # 2. SECOND-STAGE SAMPLING FRAME
   # ============================================================================
-  doc <- officer::body_add_par(doc, "2. Second-Stage Sampling Frame", style = "WBG Heading 1")
+  doc <- officer::body_add_par(doc, "2. Second-Stage Sampling Frame", style = "Report Heading 1")
   doc <- officer::body_add_par(
     doc,
     paste0(
@@ -762,13 +797,13 @@ build_sampling_report_docx <- function(frame_data,
       "area identifier (`", frame_cluster_var, "`). Records with missing geographic coordinates ",
       "are excluded prior to spatial projection and sample selection."
     ),
-    style = "WBG Body"
+    style = "Report Body"
   )
 
   doc <- officer::body_add_par(
     doc,
     "Table 1. Second-Stage Sampling Frame Summary Statistics",
-    style = "WBG Table Title"
+    style = "Report Table Title"
   )
   frame_summary_df <- data.frame(
     Indicator = c(
@@ -797,7 +832,7 @@ build_sampling_report_docx <- function(frame_data,
     ),
     stringsAsFactors = FALSE
   )
-  doc <- add_wbg_table(doc, frame_summary_df)
+  doc <- add_report_table(doc, frame_summary_df)
   n_grid_val <- resolve_n_grid()
   doc <- officer::body_add_par(
     doc,
@@ -807,7 +842,7 @@ build_sampling_report_docx <- function(frame_data,
       n_grid_val,
       n_grid_val
     ),
-    style = "WBG Caption"
+    style = "Report Caption"
   )
 
   if (n_low_cov > 0L) {
@@ -824,7 +859,7 @@ build_sampling_report_docx <- function(frame_data,
           prop = fp_value
         )
       ),
-      style = "WBG Callout"
+      style = "Report Callout"
     )
   }
 
@@ -832,7 +867,7 @@ build_sampling_report_docx <- function(frame_data,
   doc <- officer::body_add_par(
     doc,
     "Table 2. Listed Building Frame Distribution and Spatial Grid Coverage by Enumeration Area",
-    style = "WBG Table Title"
+    style = "Report Table Title"
   )
   ea_names <- names(frame_counts_tbl)
   lon_ranges <- vapply(ea_names, function(cl) {
@@ -871,19 +906,19 @@ build_sampling_report_docx <- function(frame_data,
     check.names = FALSE,
     stringsAsFactors = FALSE
   )
-  doc <- add_wbg_table(doc, frame_ea_df)
+  doc <- add_report_table(doc, frame_ea_df)
   doc <- officer::body_add_par(
     doc,
     "Note: Coordinates are reported in decimal degrees (WGS84 / EPSG:4326).",
-    style = "WBG Caption"
+    style = "Report Caption"
   )
 
   # ============================================================================
   # 3. SAMPLING METHODOLOGY & PROCESS
   # ============================================================================
-  doc <- officer::body_add_par(doc, "3. Sampling Methodology and Process", style = "WBG Heading 1")
+  doc <- officer::body_add_par(doc, "3. Sampling Methodology and Process", style = "Report Heading 1")
 
-  doc <- officer::body_add_par(doc, "3.1 Coordinate Projection and Stratification", style = "WBG Heading 2")
+  doc <- officer::body_add_par(doc, "3.1 Coordinate Projection and Stratification", style = "Report Heading 2")
   doc <- officer::body_add_par(
     doc,
     sprintf(
@@ -897,10 +932,10 @@ build_sampling_report_docx <- function(frame_data,
       utm_epsg_val,
       cluster_var
     ),
-    style = "WBG Body"
+    style = "Report Body"
   )
 
-  doc <- officer::body_add_par(doc, "3.2 Selection Algorithm and Inclusion Probabilities", style = "WBG Heading 2")
+  doc <- officer::body_add_par(doc, "3.2 Selection Algorithm and Inclusion Probabilities", style = "Report Heading 2")
   algo_desc <- if (identical(sample_mode, "Balanced")) {
     paste0(
       "Within each enumeration area, units were selected via the Generalized Random ",
@@ -928,7 +963,7 @@ build_sampling_report_docx <- function(frame_data,
       "tessellation constraints."
     )
   }
-  doc <- officer::body_add_par(doc, algo_desc, style = "WBG Body")
+  doc <- officer::body_add_par(doc, algo_desc, style = "Report Body")
 
   doc <- officer::body_add_par(
     doc,
@@ -939,13 +974,13 @@ build_sampling_report_docx <- function(frame_data,
       "pi_hi = 1.0 and base weight w_hi = 1.0). Otherwise, each unit i in enumeration area h ",
       "receives inclusion probability pi_hi = n_h / N_h and design weight w_hi = N_h / n_h."
     ),
-    style = "WBG Body"
+    style = "Report Body"
   )
 
   doc <- officer::body_add_par(
     doc,
     "Table 3. Sampling Process Parameters and Reproducibility Specification",
-    style = "WBG Table Title"
+    style = "Report Table Title"
   )
   spsurvey_ver <- if (requireNamespace("spsurvey", quietly = TRUE)) {
     as.character(utils::packageVersion("spsurvey"))
@@ -977,17 +1012,17 @@ build_sampling_report_docx <- function(frame_data,
     ),
     stringsAsFactors = FALSE
   )
-  doc <- add_wbg_table(doc, params_df)
+  doc <- add_report_table(doc, params_df)
   doc <- officer::body_add_par(
     doc,
     "Note: Providing the same frame dataset, cluster variable, sampling mode, and random seed reproduces the exact sample.",
-    style = "WBG Caption"
+    style = "Report Caption"
   )
 
   # ============================================================================
   # 4. RESULTING SECOND-STAGE SAMPLE
   # ============================================================================
-  doc <- officer::body_add_par(doc, "4. Resulting Second-Stage Sample", style = "WBG Heading 1")
+  doc <- officer::body_add_par(doc, "4. Resulting Second-Stage Sample", style = "Report Heading 1")
   doc <- officer::body_add_par(
     doc,
     sprintf(
@@ -1006,13 +1041,13 @@ build_sampling_report_docx <- function(frame_data,
       deff_wgt,
       n_eff
     ),
-    style = "WBG Body"
+    style = "Report Body"
   )
 
   doc <- officer::body_add_par(
     doc,
     "Table 4. Resulting Sample Summary and Design Weight Diagnostics",
-    style = "WBG Table Title"
+    style = "Report Table Title"
   )
   sample_summary_df <- data.frame(
     Indicator = c(
@@ -1041,18 +1076,18 @@ build_sampling_report_docx <- function(frame_data,
     ),
     stringsAsFactors = FALSE
   )
-  doc <- add_wbg_table(doc, sample_summary_df)
+  doc <- add_report_table(doc, sample_summary_df)
   doc <- officer::body_add_par(
     doc,
     "Note: DEFF_w = 1 + CV(wgt)^2; Effective sample size n_eff = n / DEFF_w.",
-    style = "WBG Caption"
+    style = "Report Caption"
   )
 
   # Visual Figure: Frame vs. Sampled Buildings per Enumeration Area
   doc <- officer::body_add_par(
     doc,
     "Figure 1. Comparison of Listed Frame Buildings and Selected Sample Units by Enumeration Area",
-    style = "WBG Table Title"
+    style = "Report Table Title"
   )
   all_clusters <- union(names(frame_counts_tbl), names(sample_counts_tbl))
   frame_by_cl <- as.numeric(frame_counts_tbl[all_clusters])
@@ -1080,21 +1115,21 @@ build_sampling_report_docx <- function(frame_data,
     graphics::barplot(
       plot_mat,
       beside = TRUE,
-      col = c(wbg_navy, wbg_cyan),
+      col = c(rpt_navy, rpt_cyan),
       border = NA,
       ylim = c(0, max(1, y_max)),
       las = 2,
       cex.names = 0.8,
       ylab = "Number of Buildings",
       main = "Frame vs. Sampled Buildings by Enumeration Area",
-      col.main = wbg_navy,
-      col.lab = wbg_text
+      col.main = rpt_navy,
+      col.lab = rpt_text
     )
     graphics::grid(nx = NA, ny = NULL, col = "#D9E2EC", lty = "dotted")
     graphics::legend(
       "topright",
       legend = c("Listed Frame (N_h)", "Selected Sample (n_h)"),
-      fill = c(wbg_navy, wbg_cyan),
+      fill = c(rpt_navy, rpt_cyan),
       border = NA,
       bty = "n",
       cex = 0.85
@@ -1109,15 +1144,15 @@ build_sampling_report_docx <- function(frame_data,
   )
   doc <- officer::body_add_par(
     doc,
-    "Note: Bars compare total listed buildings (WBG Solid Blue #002244) against drawn sample units (WBG Cyan #009FDA) per enumeration area.",
-    style = "WBG Caption"
+    "Note: Bars compare total listed buildings (Navy #002244) against drawn sample units (Cyan #009FDA) per enumeration area.",
+    style = "Report Caption"
   )
 
   # Table 5: Cluster-Level Allocation & Weights
   doc <- officer::body_add_par(
     doc,
     "Table 5. Cluster-Level Frame Size, Sample Allocation, and Design Weights",
-    style = "WBG Table Title"
+    style = "Report Table Title"
   )
   wgt_by_cl <- vapply(all_clusters, function(cl) {
     vals <- wgt_vec[sample_clusters == cl]
@@ -1157,11 +1192,11 @@ build_sampling_report_docx <- function(frame_data,
     check.names = FALSE,
     stringsAsFactors = FALSE
   )
-  doc <- add_wbg_table(doc, cluster_alloc_df)
+  doc <- add_report_table(doc, cluster_alloc_df)
   doc <- officer::body_add_par(
     doc,
     "Source: Second-stage sample generated by susolisting via spsurvey.",
-    style = "WBG Caption"
+    style = "Report Caption"
   )
 
   # Save the Word document to disk (`print.rdocx` writes to `target` when specified)

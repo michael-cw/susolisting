@@ -60,7 +60,6 @@ if (getRversion() >= "3.3.0") {
     "Team",
     "time",
     "Title",
-    " type",
     "type",
     "Type",
     "UserName",

@@ -110,7 +110,7 @@ test_that("modal_spsample2stage_server draws balanced and random 2nd-stage sampl
   )
 })
 
-test_that("build_sampling_report_docx and sampling_report_server create a World Bank styled Word report", {
+test_that("build_sampling_report_docx and sampling_report_server create a formatted Word report", {
   frame_dt <- data.table::data.table(
     ea = c(rep("EA_1", 15), rep("EA_2", 8)),
     area_id = c(rep("1", 15), rep("2", 8)),
@@ -137,21 +137,30 @@ test_that("build_sampling_report_docx and sampling_report_server create a World 
   tmp_docx <- tempfile(fileext = ".docx")
   on.exit(unlink(tmp_docx), add = TRUE)
 
-  logo_file <- resolve_wbg_logo_path()
+  logo_file <- resolve_report_logo_path()
   expect_true(nzchar(logo_file))
   expect_true(file.exists(logo_file))
+  expect_match(basename(logo_file), "susospatial\\.png$")
+
+  custom_logo <- tempfile(fileext = ".png")
+  on.exit(unlink(custom_logo), add = TRUE)
+  file.copy(logo_file, custom_logo)
+  expect_equal(resolve_report_logo_path(custom_logo), custom_logo)
 
   out_path <- build_sampling_report_docx(
     frame_data = frame_dt,
     sample_data = sample_dt,
     sampling_params = params,
-    file = tmp_docx
+    file = tmp_docx,
+    logo_path = custom_logo
   )
   expect_equal(out_path, tmp_docx)
   expect_true(file.exists(tmp_docx))
   expect_gt(file.info(tmp_docx)$size, 10000)
 
   doc_parsed <- officer::read_docx(tmp_docx)
+  props_df <- officer::doc_properties(doc_parsed)
+  expect_equal(props_df$value[props_df$tag == "creator"], "susolisting")
   summary_df <- officer::docx_summary(doc_parsed)
   full_text <- paste(summary_df$text, collapse = "\n")
   expect_match(full_text, "Second-Stage Spatial Sampling Report")

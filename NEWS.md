@@ -2,7 +2,7 @@
 
 * Added support for Vantor / Maxar Vivid satellite imagery (`provider = c("google", "vantor", "maxar")`) via `leaflet` and `vantorr` (>= 0.3.0), including `runListingApp()` and `runListingAppServer()`.
 * Added a spatial grid polygon coverage check (`calculate_polygon_coverage()`, `summarize_cluster_coverage()`, and `n_grid = 10L` parameter) to compute the percentage of each Enumeration Area polygon covered by marked building locations and flag low-coverage clusters (`< 20%`) in the sidebar `AreaSummary` table, Admin `Frame Summary`, and Word sampling report.
-* Added a dedicated Word (`.docx`) Sampling Report module (`R/shiny_sampling_report_module.R`) powered by `officer` and styled according to the World Bank Group Branding and Visual Identity Guidelines.
+* Added a dedicated Word (`.docx`) Sampling Report module (`R/shiny_sampling_report_module.R`) powered by `officer` with formatted summary tables, design weight diagnostics, cluster allocation charts, and customizable cover logo (`logo_path`).
 * Replaced deprecated `googleway::add_drawing()` (`google.maps.drawing.DrawingManager`, removed in Google Maps JS API v3.65+) with a custom Pan / Marker drawing control and click handler (`add_marker_drawing()`, `clear_marker_drawing()`, `suso_drawing_js()`).
 * Migrated Survey Solutions integration from `SurveySolutionsAPI` to `SurveySolutionsAPIv2`.
 * Removed `shinyWidgets`, `dplyr`, `readr`, `stringr`, and `magrittr` dependencies in favor of base R (`>= 4.1.0`) and `data.table`.

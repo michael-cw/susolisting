@@ -22,8 +22,8 @@ valuable tools for enumerating and extracting survey units.
 #### Key Features
 
 1.  **Enumeration of Buildings & Spatial Coverage Check**: Utilizing
-    Enumeration Areas (e.g., those sampled with the [JDC-Survey
-    Solutions Spatial Sampling
+    Enumeration Areas (e.g., those sampled with the [Survey Solutions
+    Spatial Sampling
     application](https://github.com/michael-cw/susogrdframe)), you can
     identify and enumerate all visible buildings within specified
     boundaries on Google Maps or Vantor (Maxar) satellite imagery via
@@ -45,7 +45,7 @@ valuable tools for enumerating and extracting survey units.
     package, which facilitates the drawing of spatially balanced or
     random second-stage samples, and
     [`officer`](https://CRAN.R-project.org/package=officer) to generate
-    a World Bank Group-styled Word (`.docx`) sampling report.
+    a formatted Word (`.docx`) sampling report.
 
 4.  **Assignment to Supervisors**: Once the sample is generated, you can
     assign it directly to the Survey Solutions supervisors. This

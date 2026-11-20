@@ -5,12 +5,12 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Shiny Application for Enumeration Area Listing on Satellite Imagery • susolisting</title>
+<title>Shiny Application for Enumeration Area Listing • susolisting</title>
 <script src="deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="Shiny Application for Enumeration Area Listing on Satellite Imagery">
+<script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="Shiny Application for Enumeration Area Listing">
 <meta name="description" content="Interactive Shiny application to mark buildings on Google Maps or Vantor (Maxar) satellite imagery within user-provided enumeration area (EA) boundaries. Reads boundary polygons in ESRI shapefile format, exports listed building coordinates as a CSV file, supports second-stage spatially balanced sampling via spsurvey, and integrates with Survey Solutions (&lt;https://mysurvey.solutions/&gt;) via SurveySolutionsAPIv2 for automated survey assignment creation.">
 <meta property="og:description" content="Interactive Shiny application to mark buildings on Google Maps or Vantor (Maxar) satellite imagery within user-provided enumeration area (EA) boundaries. Reads boundary polygons in ESRI shapefile format, exports listed building coordinates as a CSV file, supports second-stage spatially balanced sampling via spsurvey, and integrates with Survey Solutions (&lt;https://mysurvey.solutions/&gt;) via SurveySolutionsAPIv2 for automated survey assignment creation.">
 </head>
@@ -65,7 +65,7 @@
 <h4 id="key-features">Key Features<a class="anchor" aria-label="anchor" href="#key-features"></a>
 </h4>
 <ol style="list-style-type: decimal">
-<li><p><strong>Enumeration of Buildings &amp; Spatial Coverage Check</strong>: Utilizing Enumeration Areas (e.g., those sampled with the <a href="https://github.com/michael-cw/susogrdframe" class="external-link">JDC-Survey Solutions Spatial Sampling application</a>), you can identify and enumerate all visible buildings within specified boundaries on Google Maps or Vantor (Maxar) satellite imagery via <a href="https://github.com/michael-cw/vantorr" class="external-link"><code>vantorr</code></a>. When saving an area, a spatial grid coverage check (<code>n_grid = 10L</code> by default) computes the percentage of the polygon covered by building markers and flags low-coverage areas (<code>&lt; 20%</code>).</p></li>
+<li><p><strong>Enumeration of Buildings &amp; Spatial Coverage Check</strong>: Utilizing Enumeration Areas (e.g., those sampled with the <a href="https://github.com/michael-cw/susogrdframe" class="external-link">Survey Solutions Spatial Sampling application</a>), you can identify and enumerate all visible buildings within specified boundaries on Google Maps or Vantor (Maxar) satellite imagery via <a href="https://github.com/michael-cw/vantorr" class="external-link"><code>vantorr</code></a>. When saving an area, a spatial grid coverage check (<code>n_grid = 10L</code> by default) computes the percentage of the polygon covered by building markers and flags low-coverage areas (<code>&lt; 20%</code>).</p></li>
 <li>
 <p><strong>Admin Interface</strong>: This intuitive interface lets you:</p>
 <ul>
@@ -73,7 +73,7 @@
 <li>Construct the frame and review cluster-level population and spatial coverage diagnostics, which become the basis for drawing the sample.</li>
 </ul>
 </li>
-<li><p><strong>Sample Drawing &amp; Reporting</strong>: For this stage, the application leverages the <a href="https://usepa.github.io/spsurvey/" class="external-link"><code>spsurvey</code></a> package, which facilitates the drawing of spatially balanced or random second-stage samples, and <a href="https://CRAN.R-project.org/package=officer" class="external-link"><code>officer</code></a> to generate a World Bank Group-styled Word (<code>.docx</code>) sampling report.</p></li>
+<li><p><strong>Sample Drawing &amp; Reporting</strong>: For this stage, the application leverages the <a href="https://usepa.github.io/spsurvey/" class="external-link"><code>spsurvey</code></a> package, which facilitates the drawing of spatially balanced or random second-stage samples, and <a href="https://CRAN.R-project.org/package=officer" class="external-link"><code>officer</code></a> to generate a formatted Word (<code>.docx</code>) sampling report.</p></li>
 <li><p><strong>Assignment to Supervisors</strong>: Once the sample is generated, you can assign it directly to the Survey Solutions supervisors. This assignment is performed through a streamlined interface grounded on <a href="https://CRAN.R-project.org/package=SurveySolutionsAPIv2" class="external-link"><code>SurveySolutionsAPIv2</code></a> (REST and GraphQL APIs).</p></li>
 </ol>
 </div>
@@ -93,7 +93,7 @@
 </h2>
 <ol style="list-style-type: decimal">
 <li><p>Install R: <a href="https://CRAN.R-project.org/mirrors.html" class="external-link uri">https://CRAN.R-project.org/mirrors.html</a> (version 4.1.0 or greater)</p></li>
-<li><p>Install RStudio: <a href="https://posit.co/download/rstudio-desktop/" class="external-link uri">https://posit.co/download/rstudio-desktop/</a></p></li>
+<li><p>Install RStudio: <a href="https://posit.co/downloads/" class="external-link uri">https://posit.co/downloads/</a></p></li>
 <li><p>Make sure the <code>devtools</code> package is installed, if not install it with:</p></li>
 </ol>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">

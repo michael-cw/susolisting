@@ -7,7 +7,7 @@
 #' @details
 #' This application is part of the suite of tools facilitating survey
 #' implementation with [Survey Solutions](https://docs.mysurvey.solutions/).
-#' Enumeration Areas (e.g., sampled with the JDC-Survey Solutions Spatial
+#' Enumeration Areas (e.g., sampled with the Survey Solutions Spatial
 #' Sampling application) can be used to enumerate all buildings visible within
 #' the boundaries on a Google or Vantor (Maxar) satellite map. The enumerated
 #' buildings can then be used for the second-stage sampling frame and to draw
@@ -23,6 +23,10 @@
 #' @param n_grid Integer specifying the number of grid cells along each axis
 #'   used for the spatial polygon coverage check (default `10L`, producing a
 #'   `10 x 10` spatial grid).
+#' @param logo_path Optional character string specifying the file path to a
+#'   custom PNG logo image to display on the front cover of the Word sampling
+#'   report. If `NULL` (default), uses `getOption("susolisting.logo_path")` or
+#'   falls back to the built-in package logo (`inst/www/susospatial.png`).
 #'
 #' @return No return value, called for side effects (launches the interactive
 #'   'Shiny' application).
@@ -38,7 +42,8 @@ runListingApp <- function(launch.browser = TRUE,
                           admuser = NULL,
                           admpass = NULL,
                           provider = c("google", "vantor", "maxar"),
-                          n_grid = 10L) {
+                          n_grid = 10L,
+                          logo_path = NULL) {
   provider <- resolve_map_provider(provider)
   n_grid <- resolve_n_grid(n_grid)
   shiny::addResourcePath("www", system.file("www", package = "susolisting"))
@@ -49,7 +54,8 @@ runListingApp <- function(launch.browser = TRUE,
     admuser = admuser,
     admpass = admpass,
     susolisting.provider = provider,
-    susolisting.n_grid = n_grid
+    susolisting.n_grid = n_grid,
+    susolisting.logo_path = logo_path
   )
   on.exit(options(old_opts), add = TRUE)
 
@@ -60,7 +66,8 @@ runListingApp <- function(launch.browser = TRUE,
       admuser = admuser,
       admpass = admpass,
       susolisting.provider = provider,
-      susolisting.n_grid = n_grid
+      susolisting.n_grid = n_grid,
+      susolisting.logo_path = logo_path
     )
     shiny::shinyOptions(shiny.maxRequestSize = 5000 * 1024^2)
 

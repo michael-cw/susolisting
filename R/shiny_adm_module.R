@@ -142,7 +142,7 @@ modal_adminspsample_server <- function(id, side = shiny::reactive(NULL)) {
           confirmButtonText = "OK",
           confirmButtonCol = "#AEDEF4",
           timer = 0,
-          imageUrl = "www/logoWBDG.png",
+          imageUrl = "www/susospatial.png",
           animation = TRUE
         )
       } else if (admcheckResult()) {
@@ -217,7 +217,7 @@ modal_adminspsample_server <- function(id, side = shiny::reactive(NULL)) {
           confirmButtonText = "Generate the frame",
           confirmButtonCol = "#AEDEF4",
           timer = 0,
-          imageUrl = "www/logoWBDG.png",
+          imageUrl = "www/susospatial.png",
           animation = TRUE
         )
       }

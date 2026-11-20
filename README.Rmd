@@ -26,13 +26,13 @@ The Survey Solutions Listing Application forms an integral part of a comprehensi
 
 #### Key Features
 
-1. **Enumeration of Buildings & Spatial Coverage Check**: Utilizing Enumeration Areas (e.g., those sampled with the [JDC-Survey Solutions Spatial Sampling application](https://github.com/michael-cw/susogrdframe)), you can identify and enumerate all visible buildings within specified boundaries on Google Maps or Vantor (Maxar) satellite imagery via [`vantorr`](https://github.com/michael-cw/vantorr). When saving an area, a spatial grid coverage check (`n_grid = 10L` by default) computes the percentage of the polygon covered by building markers and flags low-coverage areas (`< 20%`).
+1. **Enumeration of Buildings & Spatial Coverage Check**: Utilizing Enumeration Areas (e.g., those sampled with the [Survey Solutions Spatial Sampling application](https://github.com/michael-cw/susogrdframe)), you can identify and enumerate all visible buildings within specified boundaries on Google Maps or Vantor (Maxar) satellite imagery via [`vantorr`](https://github.com/michael-cw/vantorr). When saving an area, a spatial grid coverage check (`n_grid = 10L` by default) computes the percentage of the polygon covered by building markers and flags low-coverage areas (`< 20%`).
 
 2. **Admin Interface**: This intuitive interface lets you:
     * Extract all enumerated areas from the individual user directories of your collaborators.
     * Construct the frame and review cluster-level population and spatial coverage diagnostics, which become the basis for drawing the sample.
 
-3. **Sample Drawing & Reporting**: For this stage, the application leverages the [`spsurvey`](https://usepa.github.io/spsurvey/) package, which facilitates the drawing of spatially balanced or random second-stage samples, and [`officer`](https://CRAN.R-project.org/package=officer) to generate a World Bank Group-styled Word (`.docx`) sampling report.
+3. **Sample Drawing & Reporting**: For this stage, the application leverages the [`spsurvey`](https://usepa.github.io/spsurvey/) package, which facilitates the drawing of spatially balanced or random second-stage samples, and [`officer`](https://CRAN.R-project.org/package=officer) to generate a formatted Word (`.docx`) sampling report.
 
 4. **Assignment to Supervisors**: Once the sample is generated, you can assign it directly to the Survey Solutions supervisors. This assignment is performed through a streamlined interface grounded on [`SurveySolutionsAPIv2`](https://CRAN.R-project.org/package=SurveySolutionsAPIv2) (REST and GraphQL APIs).
 

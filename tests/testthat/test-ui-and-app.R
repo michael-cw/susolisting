@@ -8,7 +8,7 @@ test_that("main_ui builds without startup warnings for both google and vantor pr
   })
   expect_s3_class(ui_google, "shiny.tag")
   ui_google_html <- as.character(ui_google)
-  expect_match(ui_google_html, "JDC - WB Listing Application")
+  expect_match(ui_google_html, "Survey Solutions Listing Application")
   expect_match(ui_google_html, "Google Map")
   expect_match(ui_google_html, "detailSampMap")
   expect_match(ui_google_html, "add_suso_drawing")

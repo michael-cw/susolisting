@@ -17,7 +17,7 @@ knitr::opts_chunk$set(
 
 ## Overview
 
-The **Survey Solutions Listing Application** (`susolisting`) enables desk enumerators to build a complete second-stage sampling frame of buildings within first-stage Enumeration Areas (EAs). Starting from a zipped ESRI shapefile of EA boundary polygons (typically produced by the [JDC-Survey Solutions Spatial Sampling Application](https://github.com/michael-cw/susogrdframe)), enumerators step through each polygon on high-resolution satellite imagery and place a marker on every visible building rooftop.
+The **Survey Solutions Listing Application** (`susolisting`) enables desk enumerators to build a complete second-stage sampling frame of buildings within first-stage Enumeration Areas (EAs). Starting from a zipped ESRI shapefile of EA boundary polygons (typically produced by the [Survey Solutions Spatial Sampling Application](https://github.com/michael-cw/susogrdframe)), enumerators step through each polygon on high-resolution satellite imagery and place a marker on every visible building rooftop.
 
 The application supports two satellite imagery providers:
 

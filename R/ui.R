@@ -24,7 +24,7 @@ main_ui <- function(req) {
           2,
           shiny::div(
             style = "height:20px; text-align: center;",
-            shiny::img(src = "www/logoWBDG.png")
+            shiny::img(src = "www/susospatial.png", style = "height: 55px; width: auto;")
           )
         ),
         shiny::column(
@@ -33,7 +33,7 @@ main_ui <- function(req) {
             style = "background-color:#0d47a1; margin-left:5%; margin-top:0px; margin-bottom:0px;
                      height: 60px; padding: 30 0 10 0;",
             shiny::h1(
-              "JDC - WB Listing Application",
+              "Survey Solutions Listing Application",
               align = "center",
               style = "color:#FFFFFF; margin:0 0 0 0;"
             )
@@ -72,7 +72,7 @@ main_ui <- function(req) {
         padding: 5px;
       }
       .skin-blue .main-header .logo {
-        background-image: url(logoWBDG.png);
+        background-image: url(susospatial.png);
         background-repeat: no-repeat;
         background-size: 250px 70px !important;
         width: 100%;

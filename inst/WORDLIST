@@ -6,7 +6,6 @@ EAs
 EPSG
 GRTS
 GraphQL
-JDC
 JS
 JSON
 Lifecycle
@@ -25,6 +24,7 @@ backfills
 basemaps
 callout
 crosshair
+customizable
 cutlines
 frac
 lfloor
