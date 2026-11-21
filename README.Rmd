@@ -62,7 +62,6 @@ install.packages("devtools")
 4. Install `vantorr` and `susolisting` from GitHub (CRAN dependencies including `SurveySolutionsAPIv2` are installed automatically):
 
 ```{r install, eval=FALSE, echo=TRUE}
-devtools::install_github("michael-cw/vantorr")
 devtools::install_github("michael-cw/susolisting")
 ```
 

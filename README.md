@@ -89,7 +89,6 @@ install.packages("devtools")
     including `SurveySolutionsAPIv2` are installed automatically):
 
 ``` r
-devtools::install_github("michael-cw/vantorr")
 devtools::install_github("michael-cw/susolisting")
 ```
 
